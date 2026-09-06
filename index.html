@@ -48,7 +48,8 @@
   <div class="satir">
     <button id="btnSifirla" class="ikincil">Sıfırla (C)</button>
     <button id="btnDuzenle" class="ikincil">Düzenleme Modu (E)</button>
-    <label class="cek"><input type="checkbox" id="chkKlavye"> Klavye Simülasyonu (ok tuşları, Enter = kamera)</label>
+    <button id="btnGezin" class="ikincil">Gezin Modu (G)</button>
+    <label class="cek"><input type="checkbox" id="chkKlavye"> Klavye Simülasyonu (ok tuşları, WASD gezin, Enter=kamera, +/- hız, Q/Z irtifa)</label>
   </div>
 </div>
 
@@ -102,6 +103,49 @@ sahne.add(zemin);
 const grid = new THREE.GridHelper(2800, 56, 0xffffff, 0x689b5e);
 grid.material.opacity = 0.25; grid.material.transparent = true;
 sahne.add(grid);
+
+// ===== PARKLAR (düz poligonlar, yere koyulur) ================================
+for (const p of PARKLAR) {
+  if (!p.taban || p.taban.length < 3) continue;
+  const sekil = new THREE.Shape();
+  sekil.moveTo(p.taban[0][0], -p.taban[0][1]);
+  for (let i = 1; i < p.taban.length; i++) sekil.lineTo(p.taban[i][0], -p.taban[i][1]);
+  sekil.closePath();
+  const g = new THREE.ShapeGeometry(sekil);
+  g.rotateX(-Math.PI / 2);
+  const renk = p.tip === 'garden' ? 0x6fae5f : p.tip === 'grass' ? 0x63994f : 0x557f3b;
+  const mesh = new THREE.Mesh(g, new THREE.MeshLambertMaterial({ color: renk }));
+  mesh.position.y = 0.05;
+  sahne.add(mesh);
+}
+
+// ===== YOLLAR (pürüzsüz çizgiler) ============================================
+for (const yol of YOLLAR) {
+  const [duz, genislik, tip] = yol;
+  if (!duz || duz.length < 4) continue;
+  const noktalar = [];
+  for (let i = 0; i < duz.length; i += 2) noktalar.push(new THREE.Vector3(duz[i], 0.06, duz[i + 1]));
+  const g = new THREE.BufferGeometry().setFromPoints(noktalar);
+  const renk = tip === 'service' ? 0x9b9b9b : 0xcacaca;
+  sahne.add(new THREE.Line(g, new THREE.LineBasicMaterial({ color: renk })));
+}
+
+// ===== FISKIYELER (daire havuz + ortak sütun) ================================
+for (const f of FISKIYELER) {
+  const havuz = new THREE.Mesh(
+    new THREE.CircleGeometry(f.yaricap, 24),
+    new THREE.MeshLambertMaterial({ color: 0x3f93c5 })
+  );
+  havuz.rotation.x = -Math.PI / 2;
+  havuz.position.set(f.merkez[0], 0.08, f.merkez[1]);
+  sahne.add(havuz);
+  const sutun = new THREE.Mesh(
+    new THREE.CylinderGeometry(0.4, 0.6, f.yaricap * 0.6, 10),
+    new THREE.MeshLambertMaterial({ color: 0xd9d9d9 })
+  );
+  sutun.position.set(f.merkez[0], (f.yaricap * 0.6) / 2 + 0.08, f.merkez[1]);
+  sahne.add(sutun);
+}
 
 // ===== BİNALAR ================================================================
 // taban poligonu (x,z) + yükseklik -> yere dikilmiş extrude geometri
@@ -210,6 +254,10 @@ const yumusak = { pitch: 0, roll: 0 };
 const ofset = { pitch: 0, roll: 0 };
 const sanal = { pitch: 0, roll: 0 };       // klavye simülasyonu değeri
 let klavyeModu = false;
+// --- GEZİN MODU (uçaktan bağımsız serbest kamera) ---
+let gezinModu = false;
+const gezin = { yaw: 0, pitch: -15, hiz: 25, forum: new THREE.Vector3(0, 40, 0) };
+const GEZIN_HIZ_ADIMI = 5, GEZIN_MIN_HIZ = 1, GEZIN_MAX_HIZ = 300;
 
 // ===== VERİ KAYNAKLARI ========================================================
 function satirIsle(satir) {
@@ -305,7 +353,17 @@ document.getElementById('btnWs').onclick = wsBaglan;
 document.getElementById('btnKes').onclick = kes;
 document.getElementById('btnSifirla').onclick = sifirla;
 document.getElementById('btnDuzenle').onclick = duzenleYakala;
+document.getElementById('btnGezin').onclick = () => gezinToggle();
 document.getElementById('chkKlavye').onchange = (e) => { klavyeModu = e.target.checked; };
+
+function gezinToggle() {
+  gezinModu = !gezinModu;
+  if (gezinModu) {
+    gezin.konum = konum.clone().add(new THREE.Vector3(0, 20, 0));
+    gezin.yaw = yaw;
+    gezin.pitch = -20;
+  }
+}
 
 function sifirla() {
   if (klavyeModu) { sanal.pitch = 0; sanal.roll = 0; }
@@ -319,6 +377,9 @@ addEventListener('keydown', (e) => {
   tuslar[e.key] = true;
   if (e.key === 'c' || e.key === 'C') sifirla();
   if (e.key === 'e' || e.key === 'E') duzenleYakala();
+  if (e.key === 'g' || e.key === 'G') gezinToggle();
+  if (e.key === '+' || e.key === '=') gezin.hiz = Math.min(gezin.hiz ? GEZIN_MAX_HIZ : GEZIN_MAX_HIZ, gezin.hiz + GEZIN_HIZ_ADIMI);
+  if (e.key === '-' || e.key === '_') gezin.hiz = Math.max(GEZIN_MIN_HIZ, gezin.hiz - GEZIN_HIZ_ADIMI);
   if (e.key === 'Enter') kameraTogglesi();
 });
 addEventListener('keyup', (e) => { tuslar[e.key] = false; });
@@ -367,12 +428,41 @@ function dongu() {
   requestAnimationFrame(dongu);
   const dt = Math.min(saat.getDelta(), 0.05);
 
-  // klavye simülasyonu: sanal sensör değerlerini güncelle
+  // --- GEZİN MODU: serbest kamera (uçaktan bağımsız) ---
+  if (gezinModu) {
+    const adimRot = 60 * dt;  // kamera dönüş hızı (°/s)
+    if (tuslar['ArrowUp']) gezin.pitch = Math.min(80, gezin.pitch + adimRot);
+    if (tuslar['ArrowDown']) gezin.pitch = Math.max(-80, gezin.pitch - adimRot);
+    if (tuslar['ArrowLeft']) gezin.yaw += THREE.MathUtils.degToRad(adimRot);
+    if (tuslar['ArrowRight']) gezin.yaw -= THREE.MathUtils.degToRad(adimRot);
+
+    const cosP = Math.cos(THREE.MathUtils.degToRad(gezin.pitch));
+    const dir = new THREE.Vector3(-Math.sin(gezin.yaw) * cosP,
+                                  Math.sin(THREE.MathUtils.degToRad(gezin.pitch)),
+                                  -Math.cos(gezin.yaw) * cosP);
+    const ileriYatay = new THREE.Vector3(-Math.sin(gezin.yaw), 0, -Math.cos(gezin.yaw));
+    const sag = new THREE.Vector3(Math.cos(gezin.yaw), 0, -Math.sin(gezin.yaw));
+
+    if (tuslar['w'] || tuslar['W']) gezin.konum.addScaledVector(ileriYatay, gezin.hiz * dt);
+    if (tuslar['s'] || tuslar['S']) gezin.konum.addScaledVector(ileriYatay, -gezin.hiz * dt);
+    if (tuslar['a'] || tuslar['A']) gezin.konum.addScaledVector(sag, -gezin.hiz * dt);
+    if (tuslar['d'] || tuslar['D']) gezin.konum.addScaledVector(sag, gezin.hiz * dt);
+    if (tuslar['q'] || tuslar['Q']) gezin.konum.y += gezin.hiz * dt;
+    if (tuslar['z'] || tuslar['Z']) gezin.konum.y = Math.max(1, gezin.konum.y - gezin.hiz * dt);
+
+    kamera.position.copy(gezin.konum);
+    kamera.lookAt(gezin.konum.clone().addScaledVector(dir, 10));
+    durumGuncelle(`Gezin (WASD ileri/geri/sağ sol, Q/Z irtifa, +/- hız=${gezin.hiz} m/s, G/Çıkış)`);
+    renderer.render(sahne, kamera);
+    return;
+  }
+
+  // klavye simülasyonu: sanal sensör değerlerini güncelle (DÜZELTİLMİŞ yönler)
   const adim = 60 * dt;   // °/s
   if (tuslar['ArrowUp']) sanal.pitch = Math.min(45, sanal.pitch + adim);
   if (tuslar['ArrowDown']) sanal.pitch = Math.max(-45, sanal.pitch - adim);
-  if (tuslar['ArrowLeft']) sanal.roll = Math.min(45, sanal.roll + adim);
-  if (tuslar['ArrowRight']) sanal.roll = Math.max(-45, sanal.roll - adim);
+  if (tuslar['ArrowLeft']) sanal.roll = Math.max(-45, sanal.roll - adim);   // sol ← (düzeltildi)
+  if (tuslar['ArrowRight']) sanal.roll = Math.min(45, sanal.roll + adim);  // sağ → (düzeltildi)
 
   // kaynak seçimi: klavye modu açıksa sanal değer, değilse ham sensör
   const hedefPitch = klavyeModu ? sanal.pitch : ham.pitch;
