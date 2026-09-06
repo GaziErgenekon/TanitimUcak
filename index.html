@@ -1,0 +1,436 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>GAZİ Kampüs Uçuş Simülatörü</title>
+<style>
+  html, body { margin: 0; height: 100%; overflow: hidden; background: #0e1116; font-family: system-ui, sans-serif; }
+  #sahne { position: fixed; inset: 0; }
+  .hud { position: fixed; color: #e8eaed; user-select: none; }
+  #panel { top: 10px; left: 10px; background: rgba(16,20,26,.82); border: 1px solid #2a3442;
+           border-radius: 10px; padding: 10px 12px; display: flex; flex-direction: column; gap: 8px; max-width: 260px; }
+  #panel .satir { display: flex; gap: 6px; flex-wrap: wrap; }
+  button { background: #2563eb; color: #fff; border: 0; border-radius: 6px; padding: 6px 10px;
+           font-size: 13px; cursor: pointer; }
+  button:hover { background: #1d4ed8; }
+  button.ikincil { background: #37414f; }
+  button.ikincil:hover { background: #465364; }
+  button.tehlike { background: #b3372e; }
+  label.cek { font-size: 12px; display: flex; align-items: center; gap: 5px; }
+  #durum { left: 10px; bottom: 10px; background: rgba(16,20,26,.82); border: 1px solid #2a3442;
+           border-radius: 8px; padding: 7px 12px; font-size: 12.5px; white-space: nowrap; }
+  #durum b { color: #7cc4ff; }
+  #duzenle { top: 10px; right: 10px; background: rgba(16,20,26,.88); border: 1px solid #2a3442;
+             border-radius: 10px; padding: 10px; width: 300px; display: none; flex-direction: column; gap: 6px; }
+  #duzenle textarea { width: 100%; height: 120px; background: #0a0d12; color: #9fe6a0;
+                      border: 1px solid #2a3442; border-radius: 6px; font: 11px monospace; }
+  #duzenle .baslik { font-size: 12.5px; color: #ffd479; }
+</style>
+<script type="importmap">
+{
+  "imports": {
+    "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+    "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+  }
+}
+</script>
+</head>
+<body>
+<div id="sahne"></div>
+
+<div id="panel" class="hud">
+  <div class="satir">
+    <button id="btnSeri">Seri Porttan Bağlan</button>
+    <button id="btnWs" class="ikincil">WebSocket ile Bağlan</button>
+    <button id="btnKes" class="tehlike">Bağlantıyı Kes</button>
+  </div>
+  <div class="satir">
+    <button id="btnSifirla" class="ikincil">Sıfırla (C)</button>
+    <button id="btnDuzenle" class="ikincil">Düzenleme Modu (E)</button>
+    <label class="cek"><input type="checkbox" id="chkKlavye"> Klavye Simülasyonu (ok tuşları, Enter = kamera)</label>
+  </div>
+</div>
+
+<div id="duzenle" class="hud">
+  <div class="baslik">📋 Düzenleme Modu — son yakalanan bina/şablon (binalar.js'e yapıştır)</div>
+  <textarea id="duzenleMetin" readonly></textarea>
+</div>
+
+<div id="durum" class="hud">Bağlantı bekleniyor…</div>
+
+<script src="binalar.js"></script>
+<script type="module">
+import * as THREE from 'three';
+import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
+
+// ===== AYARLAR ================================================================
+const HIZ_MS          = 25;      // uçağın sabit ileri hızı (m/s)
+const DONUS_KAZANCI   = 1.1;     // roll(°) başına dönüş hızı (°/s)
+const TIRMANIS_KAZANCI= 0.55;    // pitch(°) başına dikey hız (m/s)
+const EMA_ALFA        = 0.15;    // sensör yumuşatma (0-1, küçük = daha yumuşak)
+const DEADBAND_DERECE = 2;       // ±ölü bant
+const SINIR_YARICAP   = 1300;    // uçuş sınırı (kampüs merkezinden, m)
+const YURUT_PITCH     = 1;       // -1 yaparsan pitch terslenir (sensör yönüne göre)
+const YURUT_ROLL      = 1;       // -1 yaparsan roll terslenir
+
+// ===== SAHNE ==================================================================
+const kapsayici = document.getElementById('sahne');
+const renderer = new THREE.WebGLRenderer({ antialias: true });
+renderer.setSize(innerWidth, innerHeight);
+renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+kapsayici.appendChild(renderer.domElement);
+
+const sahne = new THREE.Scene();
+const GOKYUZU = 0x87b7d8;
+sahne.background = new THREE.Color(GOKYUZU);
+sahne.fog = new THREE.Fog(GOKYUZU, 500, 2400);
+
+const kamera = new THREE.PerspectiveCamera(60, innerWidth / innerHeight, 0.1, 5000);
+sahne.add(new THREE.AmbientLight(0xffffff, 0.7));
+const gunes = new THREE.DirectionalLight(0xfff4e0, 1.6);
+gunes.position.set(400, 700, 300);
+sahne.add(gunes);
+
+// Zemin + grid
+const zemin = new THREE.Mesh(
+  new THREE.CircleGeometry(2800, 64),
+  new THREE.MeshLambertMaterial({ color: 0x4a7c43 })
+);
+zemin.rotation.x = -Math.PI / 2;
+sahne.add(zemin);
+const grid = new THREE.GridHelper(2800, 56, 0xffffff, 0x689b5e);
+grid.material.opacity = 0.25; grid.material.transparent = true;
+sahne.add(grid);
+
+// ===== BİNALAR ================================================================
+// taban poligonu (x,z) + yükseklik -> yere dikilmiş extrude geometri
+function binaGeometrisi(taban, yukseklik) {
+  const sekil = new THREE.Shape();
+  sekil.moveTo(taban[0][0], -taban[0][1]);          // (x, -z): rotateX sonrası doğru eksene gelir
+  for (let i = 1; i < taban.length; i++) sekil.lineTo(taban[i][0], -taban[i][1]);
+  sekil.closePath();
+  const g = new THREE.ExtrudeGeometry(sekil, { depth: yukseklik, bevelEnabled: false });
+  g.rotateX(-Math.PI / 2);
+  return g;
+}
+function merkezHesapla(taban) {
+  let sx = 0, sz = 0;
+  for (const p of taban) { sx += p[0]; sz += p[1]; }
+  return [sx / taban.length, sz / taban.length];
+}
+function etiketSprite(metin) {
+  const tuval = document.createElement('canvas');
+  const ctx = tuval.getContext('2d');
+  const fontPx = 30;
+  ctx.font = `${fontPx}px system-ui, sans-serif`;
+  const genislik = Math.ceil(ctx.measureText(metin).width) + 16;
+  tuval.width = genislik; tuval.height = fontPx + 16;
+  const c2 = tuval.getContext('2d');
+  c2.fillStyle = 'rgba(10,14,20,0.72)';
+  c2.fillRect(0, 0, tuval.width, tuval.height);
+  c2.font = `${fontPx}px system-ui, sans-serif`;
+  c2.fillStyle = '#ffd479';
+  c2.fillText(metin, 8, fontPx + 4);
+  const doku = new THREE.CanvasTexture(tuval);
+  const sprite = new THREE.Sprite(new THREE.SpriteMaterial({ map: doku, depthTest: false }));
+  sprite.scale.set(tuval.width * 0.10, tuval.height * 0.10, 1);
+  return sprite;
+}
+
+// Arka plan: tek geometride birleştir (performans)
+{
+  const geometrisiler = [];
+  for (const [duz, yukseklik] of ARKA_PLAN_BINALAR) {
+    const taban = [];
+    for (let i = 0; i < duz.length; i += 2) taban.push([duz[i], duz[i + 1]]);
+    if (taban.length >= 3) geometrisiler.push(binaGeometrisi(taban, yukseklik));
+  }
+  const birlesik = mergeGeometries(geometrisiler, false);
+  const mesh = new THREE.Mesh(birlesik, new THREE.MeshLambertMaterial({ color: 0x99a1a6 }));
+  sahne.add(mesh);
+}
+
+// Önemli binalar: ayrı malzeme (yan cephe + çatı) + etiket
+const onemliListesi = [];
+for (const b of ONEMLI_BINALAR) {
+  if (!b.taban || b.taban.length < 3) continue;
+  const geometri = binaGeometrisi(b.taban, b.yukseklik);
+  const yanMat = new THREE.MeshLambertMaterial({ color: b.renk ?? 0xcdbfa3 });
+  const catMat = new THREE.MeshLambertMaterial({ color: b.catRengi ?? 0x6e6e6e });
+  // ExtrudeGeometry grupları: 0 = yan duvar, 1 = kapak (çatı)
+  const mesh = new THREE.Mesh(geometri, [yanMat, catMat]);
+  sahne.add(mesh);
+  const [cx, cz] = merkezHesapla(b.taban);
+  const etiket = etiketSprite(b.isim);
+  etiket.position.set(cx, b.yukseklik + 5, cz);
+  sahne.add(etiket);
+  onemliListesi.push({ isim: b.isim, merkez: [cx, cz], yukseklik: b.yukseklik });
+}
+
+// ===== UÇAK MODELİ ============================================================
+const ucak = new THREE.Group();
+{
+  const govde = new THREE.Mesh(
+    new THREE.ConeGeometry(0.45, 2.6, 10),
+    new THREE.MeshLambertMaterial({ color: 0xd8402f })
+  );
+  govde.rotation.x = -Math.PI / 2;             // burnu -Z'ye dönük
+  ucak.add(govde);
+  const kanat = new THREE.Mesh(
+    new THREE.BoxGeometry(4.6, 0.1, 0.85),
+    new THREE.MeshLambertMaterial({ color: 0xe8e8e8 })
+  );
+  kanat.position.set(0, -0.1, 0.15);
+  ucak.add(kanat);
+  const kuyruk = new THREE.Mesh(
+    new THREE.BoxGeometry(1.6, 0.08, 0.5),
+    new THREE.MeshLambertMaterial({ color: 0xcccccc })
+  );
+  kuyruk.position.set(0, 0, 1.05);
+  ucak.add(kuyruk);
+  const dikey = new THREE.Mesh(
+    new THREE.BoxGeometry(0.08, 0.75, 0.6),
+    new THREE.MeshLambertMaterial({ color: 0xd8402f })
+  );
+  dikey.position.set(0, 0.35, 1.1);
+  ucak.add(dikey);
+}
+sahne.add(ucak);
+ucak.rotation.order = 'YXZ';
+
+// ===== UÇUŞ DURUMU ============================================================
+let konum = new THREE.Vector3(0, 30, 0);   // başlangıç irtifası 30 m
+let yaw = 0;
+let kameraModu = 'takip';                  // 'takip' | 'kokpit'
+
+// sensör ham + yumuşatılmış değerler
+const ham = { pitch: 0, roll: 0, buton: 1, oncekiButon: 1 };
+const yumusak = { pitch: 0, roll: 0 };
+const ofset = { pitch: 0, roll: 0 };
+const sanal = { pitch: 0, roll: 0 };       // klavye simülasyonu değeri
+let klavyeModu = false;
+
+// ===== VERİ KAYNAKLARI ========================================================
+function satirIsle(satir) {
+  const p = satir.split(',');
+  if (p.length < 3) return;
+  const pitch = parseFloat(p[0]);
+  const roll = parseFloat(p[1]);
+  const buton = parseInt(p[2]);
+  if (isNaN(pitch) || isNaN(roll) || isNaN(buton)) return;
+  // buton 1 -> 0 düşen kenar: kamera değiştir
+  if (ham.oncekiButon === 1 && buton === 0) kameraTogglesi();
+  ham.oncekiButon = ham.buton;
+  ham.buton = buton;
+  ham.pitch = pitch * YURUT_PITCH;
+  ham.roll = roll * YURUT_ROLL;
+}
+
+let aktifKaynak = null;         // 'seri' | 'ws'
+let kesici = null;              // bağlantıyı kapatma fonksiyonu
+
+const d0 = document.getElementById('durum');
+function durumGuncelle(ek) {
+  const kn = kameraModu === 'takip' ? 'TAKİP (3. şahıs)' : 'KOKPİT (1. şahıs)';
+  const knAdi = aktifKaynak ? (aktifKaynak === 'seri' ? 'Seri Port' : 'WebSocket') : '—';
+  d0.innerHTML =
+    `<b>Kaynak:</b> ${knAdi} | <b>Pitch:</b> ${ham.pitch.toFixed(1)}° | ` +
+    `<b>Roll:</b> ${ham.roll.toFixed(1)}° | <b>İrtifa:</b> ${konum.y.toFixed(0)} m | ` +
+    `<b>Hız:</b> ${HIZ_MS} m/s | <b>Kamera:</b> ${kn}` + (ek ? ` | ${ek}` : '');
+}
+
+// --- Web Serial (Chrome/Edge) ---
+async function seriBaglan() {
+  if (!('serial' in navigator)) {
+    alert('Bu tarayıcı Web Serial API desteklemiyor. Chrome/Edge kullanın veya WebSocket köprüsünü deneyin.');
+    return;
+  }
+  await kes();
+  try {
+    const port = await navigator.serial.requestPort();
+    await port.open({ baudRate: 115200 });
+    aktifKaynak = 'seri';
+    const decoder = new TextDecoderStream();
+    const okumaBitti = port.readable.pipeTo(decoder.writable).catch(() => {});
+    const okuyucu = decoder.readable.getReader();
+    kesici = () => {
+      okuyucu.cancel();
+      okumaBitti.then(() => port.close()).catch(() => {});
+    };
+    let tampon = '';
+    while (true) {
+      const { value, done } = await okuyucu.read();
+      if (done) break;
+      tampon += value;
+      let k;
+      while ((k = tampon.indexOf('\n')) >= 0) {
+        const satir = tampon.slice(0, k).trim();
+        tampon = tampon.slice(k + 1);
+        if (satir) satirIsle(satir);
+      }
+    }
+    aktifKaynak = null;
+  } catch (e) {
+    console.warn('Seri bağlantı hatası:', e);
+    aktifKaynak = null;
+  }
+}
+
+// --- WebSocket (Firefox/Safari, seri_kopru.py ile) ---
+function wsBaglan() {
+  kesSenk();
+  try {
+    const ws = new WebSocket('ws://localhost:8765');
+    ws.onopen = () => { aktifKaynak = 'ws'; };
+    ws.onclose = () => { if (aktifKaynak === 'ws') aktifKaynak = null; };
+    ws.onmessage = (ol) => {
+      for (const satir of ol.data.split('\n')) if (satir.trim()) satirIsle(satir.trim());
+    };
+    ws.onerror = () => alert('WebSocket bağlantısı kurulamadı.\nTerminalde "python3 seri_kopru.py" çalıştırıyor musunuz?');
+    kesici = () => ws.close();
+  } catch (e) { console.warn(e); }
+}
+
+function kesSenk() {
+  if (kesici) { try { kesici(); } catch {} kesici = null; }
+  aktifKaynak = null;
+  ham.buton = 1; ham.oncekiButon = 1;
+}
+async function kes() { kesSenk(); }
+
+// ===== HUD BUTONLARI ==========================================================
+document.getElementById('btnSeri').onclick = seriBaglan;
+document.getElementById('btnWs').onclick = wsBaglan;
+document.getElementById('btnKes').onclick = kes;
+document.getElementById('btnSifirla').onclick = sifirla;
+document.getElementById('btnDuzenle').onclick = duzenleYakala;
+document.getElementById('chkKlavye').onchange = (e) => { klavyeModu = e.target.checked; };
+
+function sifirla() {
+  if (klavyeModu) { sanal.pitch = 0; sanal.roll = 0; }
+  ofset.pitch = yumusak.pitch;
+  ofset.roll = yumusak.roll;
+}
+
+// ===== KLAVYE SİMÜLASYONU + KISAYOLLAR ========================================
+const tuslar = {};
+addEventListener('keydown', (e) => {
+  tuslar[e.key] = true;
+  if (e.key === 'c' || e.key === 'C') sifirla();
+  if (e.key === 'e' || e.key === 'E') duzenleYakala();
+  if (e.key === 'Enter') kameraTogglesi();
+});
+addEventListener('keyup', (e) => { tuslar[e.key] = false; });
+
+function kameraTogglesi() {
+  kameraModu = (kameraModu === 'takip') ? 'kokpit' : 'takip';
+}
+
+// ===== DÜZENLEME MODU =========================================================
+const duzenlePanel = document.getElementById('duzenle');
+const duzenleMetin = document.getElementById('duzenleMetin');
+function duzenleYakala() {
+  duzenlePanel.style.display = 'flex';
+  // uçağa en yakın önemli binayı bul (60 m içinde)
+  let enYakin = null, enYakinD = 60;
+  for (const b of onemliListesi) {
+    const dx = b.merkez[0] - konum.x, dz = b.merkez[1] - konum.z;
+    const d = Math.hypot(dx, dz);
+    if (d < enYakinD) { enYakinD = d; enYakin = b; }
+  }
+  let cikti;
+  if (enYakin) {
+    cikti = `// En yakın önemli bina (uçaktan ${enYakinD.toFixed(0)} m):\n` +
+      `{ isim: ${JSON.stringify(enYakin.isim)}, merkez: [${enYakin.merkez[0].toFixed(1)}, ${enYakin.merkez[1].toFixed(1)}], ` +
+      `yukseklik: ${enYakin.yukseklik} }  // konum: uçağın altı x=${konum.x.toFixed(1)}, z=${konum.z.toFixed(1)}`;
+  } else {
+    const x = konum.x.toFixed(1), z = konum.z.toFixed(1), y = konum.y.toFixed(1);
+    cikti = `// Yakında önemli bina yok. Yeni bina şablonu (uçak konumu: x=${x}, z=${z}, irtifa=${y}):
+  {
+    isim: "YENI BINA",
+    taban: [[${(konum.x - 10).toFixed(1)}, ${(konum.z - 8).toFixed(1)}], [${(konum.x + 10).toFixed(1)}, ${(konum.z - 8).toFixed(1)}],
+            [${(konum.x + 10).toFixed(1)}, ${(konum.z + 8).toFixed(1)}], [${(konum.x - 10).toFixed(1)}, ${(konum.z + 8).toFixed(1)}]],
+    yukseklik: ${Math.max(6, konum.y | 0)},
+    renk: 0xcdbfa3,
+    catRengi: 0x6e6e6e,
+    detay: { katsayisi: 3 }
+  },`;
+  }
+  duzenleMetin.value = cikti;
+  console.log(cikti);
+}
+
+// ===== OYNATIM DÖNGÜSÜ ========================================================
+const saat = new THREE.Clock();
+function dongu() {
+  requestAnimationFrame(dongu);
+  const dt = Math.min(saat.getDelta(), 0.05);
+
+  // klavye simülasyonu: sanal sensör değerlerini güncelle
+  const adim = 60 * dt;   // °/s
+  if (tuslar['ArrowUp']) sanal.pitch = Math.min(45, sanal.pitch + adim);
+  if (tuslar['ArrowDown']) sanal.pitch = Math.max(-45, sanal.pitch - adim);
+  if (tuslar['ArrowLeft']) sanal.roll = Math.min(45, sanal.roll + adim);
+  if (tuslar['ArrowRight']) sanal.roll = Math.max(-45, sanal.roll - adim);
+
+  // kaynak seçimi: klavye modu açıksa sanal değer, değilse ham sensör
+  const hedefPitch = klavyeModu ? sanal.pitch : ham.pitch;
+  const hedefRoll = klavyeModu ? sanal.roll : ham.roll;
+
+  // EMA yumuşatma
+  yumusak.pitch += (hedefPitch - yumusak.pitch) * EMA_ALFA;
+  yumusak.roll += (hedefRoll - yumusak.roll) * EMA_ALFA;
+
+  // kalibrasyon offseti + ölü bant
+  let pitchEtkili = yumusak.pitch - ofset.pitch;
+  let rollEtkili = yumusak.roll - ofset.roll;
+  if (Math.abs(pitchEtkili) < DEADBAND_DERECE) pitchEtkili = 0;
+  if (Math.abs(rollEtkili) < DEADBAND_DERECE) rollEtkili = 0;
+
+  // --- uçuş dinamiği ---
+  yaw -= THREE.MathUtils.degToRad(rollEtkili) * DONUS_KAZANCI * dt;
+  const dikeyHiz = pitchEtkili * TIRMANIS_KAZANCI;
+  const ileri = new THREE.Vector3(-Math.sin(yaw), 0, -Math.cos(yaw));
+  konum.addScaledVector(ileri, HIZ_MS * dt);
+  konum.y = Math.max(0.8, konum.y + dikeyHiz * dt);
+  // kampüs sınırı
+  const yatay = Math.hypot(konum.x, konum.z);
+  if (yatay > SINIR_YARICAP) {
+    konum.x *= SINIR_YARICAP / yatay;
+    konum.z *= SINIR_YARICAP / yatay;
+  }
+
+  // uçağı yerleştir + görsel olarak eğ
+  ucak.position.copy(konum);
+  ucak.rotation.y = yaw;
+  ucak.rotation.x = THREE.MathUtils.degToRad(pitchEtkili);
+  ucak.rotation.z = -THREE.MathUtils.degToRad(rollEtkili);
+
+  // --- kameralar ---
+  if (kameraModu === 'takip') {
+    const arka = ileri.clone().multiplyScalar(-9).add(new THREE.Vector3(0, 3.2, 0));
+    const ideal = konum.clone().add(arka);
+    kamera.position.lerp(ideal, 0.08);
+    kamera.lookAt(konum.x, konum.y + 1, konum.z);
+  } else {
+    const burun = konum.clone().addScaledVector(ileri, 2.2);
+    burun.y += 0.9;
+    kamera.position.copy(burun);
+    const bakis = konum.clone().addScaledVector(ileri, 60);
+    kamera.lookAt(bakis);
+  }
+
+  durumGuncelle();
+  renderer.render(sahne, kamera);
+}
+dongu();
+
+addEventListener('resize', () => {
+  kamera.aspect = innerWidth / innerHeight;
+  kamera.updateProjectionMatrix();
+  renderer.setSize(innerWidth, innerHeight);
+});
+</script>
+</body>
+</html>
