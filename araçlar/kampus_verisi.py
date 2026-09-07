@@ -332,8 +332,8 @@ def main():
         s.append(f"  {{ isim: {json.dumps(f['isim'], ensure_ascii=False)}, "
                  f"merkez: [{f['merkez'][0]}, {f['merkez'][1]}], yaricap: {f['yaricap']} }},")
     # OSM'de çıkmazsa kullanıcının görselinden elle eklenen rektörlük önü fıskiyesi
-    s.append('  // Elle: Rektörlük önündeki fıskiye (OSM linki: 2. işaret) —')
-    s.append('  { isim: "Rektörlük Fıskiyesi", merkez: [213, 401], yaricap: 3 },')
+    s.append('  // Elle: Rektörlük önündeki fıskiye (kullanıcı OSM linki 39.940102, 32.822988) —')
+    s.append('  { isim: "Rektörlük Fıskiyesi", merkez: [212, 378], yaricap: 3 },')
     s.append("];")
     s.append("")
     s.append("// ===== SPOR ALANLARI (futbol/tenis pisti vb., elle duzenle) =====")

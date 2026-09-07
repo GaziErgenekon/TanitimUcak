@@ -624,7 +624,7 @@ const YOLLAR = [
 // ===== FISKIYELER / NOKTA YAPILAR (merkez + yaricap) =====
 const FISKIYELER = [
   // Elle: Rektörlük önündeki fıskiye (OSM linki: 2. işaret) —
-  { isim: "Rektörlük Fıskiyesi", merkez: [213, 401], yaricap: 3 },
+  { isim: "Rektörlük Fıskiyesi", merkez: [212, 378], yaricap: 3 },
 ];
 
 // ===== SPOR ALANLARI (futbol/tenis pisti vb., elle duzenle) =====
