@@ -137,6 +137,16 @@ document.querySelectorAll('#katmanlar input[data-katman]').forEach((kutucuk) => 
   kutucuk.onchange = () => { katman[kutucuk.dataset.katman].visible = kutucuk.checked; };
 });
 
+// Düz zemin katmanları için titreme önleyici malzeme: polygonOffset +
+// renderOrder + depthWrite:false → çakışan zeminler derinlik kavgasına
+// girmez, üst üste binme sırası sabitlenir (veri aynen korunur).
+function zeminMalzeme(renk, faktor, vertexRenk = false) {
+  return new THREE.MeshLambertMaterial({
+    color: renk, vertexColors: vertexRenk, depthWrite: false,
+    polygonOffset: true, polygonOffsetFactor: faktor, polygonOffsetUnits: faktor,
+  });
+}
+
 // ===== PARKLAR (düz poligonlar, yere koyulur) ================================
 for (const p of PARK_L) {
   if (!p.taban || p.taban.length < 3) continue;
@@ -147,8 +157,9 @@ for (const p of PARK_L) {
   const g = new THREE.ShapeGeometry(sekil);
   g.rotateX(-Math.PI / 2);
   const renk = p.tip === 'garden' ? 0x6fae5f : p.tip === 'grass' ? 0x63994f : 0x557f3b;
-  const mesh = new THREE.Mesh(g, new THREE.MeshLambertMaterial({ color: renk }));
+  const mesh = new THREE.Mesh(g, zeminMalzeme(renk, -1));
   mesh.position.y = 0.05;
+  mesh.renderOrder = 1;
   katman.park.add(mesh);
 }
 
@@ -180,17 +191,20 @@ for (const p of PARK_L) {
   g.setAttribute('position', new THREE.Float32BufferAttribute(poz, 3));
   g.setAttribute('color', new THREE.Float32BufferAttribute(renkdizi, 3));
   g.computeVertexNormals();
-  katman.yol.add(new THREE.Mesh(g, new THREE.MeshLambertMaterial({ vertexColors: true })));
+  const yolMesh = new THREE.Mesh(g, zeminMalzeme(0xffffff, -3, true));
+  yolMesh.renderOrder = 3;
+  katman.yol.add(yolMesh);
 }
 
 // ===== FISKIYELER (daire havuz + ortak sütun) ================================
 for (const f of FISK_L) {
   const havuz = new THREE.Mesh(
     new THREE.CircleGeometry(f.yaricap, 24),
-    new THREE.MeshLambertMaterial({ color: 0x3f93c5 })
+    zeminMalzeme(0x3f93c5, -4)
   );
   havuz.rotation.x = -Math.PI / 2;
   havuz.position.set(f.merkez[0], 0.08, f.merkez[1]);
+  havuz.renderOrder = 4;
   katman.fiskiiye.add(havuz);
   const sutun = new THREE.Mesh(
     new THREE.CylinderGeometry(0.4, 0.6, f.yaricap * 0.6, 10),
@@ -213,8 +227,9 @@ for (const a of SPOR_L) {
   const renk = spor.includes('run') || spor.includes('track') ? 0x9e5b4a
     : spor.includes('tennis') ? 0x5b8fa8
     : spor.includes('basket') || spor.includes('volley') ? 0x8a7f5b : 0x4f9e4f;
-  const mesh = new THREE.Mesh(g, new THREE.MeshLambertMaterial({ color: renk }));
+  const mesh = new THREE.Mesh(g, zeminMalzeme(renk, -2));
   mesh.position.y = 0.06;
+  mesh.renderOrder = 2;
   katman.spor.add(mesh);
 }
 
