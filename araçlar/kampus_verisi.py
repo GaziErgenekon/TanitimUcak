@@ -44,6 +44,13 @@ SABIT_REKTORLUK_KAT = 4
 SABIT_DEKANLIK_TABAN = [[-25.3, 493.8], [-24.4, 495.0], [-15.8, 488.7], [-16.7, 487.5], [-10.5, 483.0], [-9.6, 484.2], [1.5, 476.1], [9.3, 486.9], [-48.5, 529.0], [-56.4, 518.3], [-45.3, 510.2], [-46.2, 509.0], [-40.1, 504.5], [-39.2, 505.7], [-30.5, 499.4], [-31.4, 498.2]]
 SABIT_DEKANLIK_YUKSEKLIK = 18  # 3 kat × 3 m × 2 ölçek (tahmini)
 SABIT_DEKANLIK_KAT = 3
+# SABİT TAŞKENT: OSM way 418129562/418129558/418133414 (kullanıcı: "hepsi",
+# birbirine bitişik 3 blok, link 39.939043, 32.818632 çevresi).
+SABIT_TASKENT_1 = [[-107.5, 435.8], [-119.6, 444.9], [-116.7, 448.7], [-139.1, 465.6], [-131.8, 475.2], [-109.4, 458.3], [-106.5, 462.0], [-94.6, 453.0]]
+SABIT_TASKENT_2 = [[-94.6, 453.0], [-106.5, 462.0], [-103.7, 465.7], [-126.2, 482.7], [-118.9, 492.3], [-96.5, 475.3], [-93.6, 479.1], [-81.7, 470.1]]
+SABIT_TASKENT_3 = [[-163.2, 405.3], [-176.7, 415.5], [-141.8, 461.6], [-128.3, 451.4]]
+SABIT_TASKENT_YUKSEKLIK = 18
+SABIT_TASKENT_KAT = 3
 
 ENDPOINTLER = [
     "https://overpass.kumi.systems/api/interpreter",
@@ -272,6 +279,9 @@ def main():
         ("Rektörlük", SABIT_REKTORLUK_TABAN, SABIT_REKTORLUK_YUKSEKLIK, SABIT_REKTORLUK_KAT),
         ("Teknoloji Fakültesi Dekanlığı", SABIT_DEKANLIK_TABAN,
          SABIT_DEKANLIK_YUKSEKLIK, SABIT_DEKANLIK_KAT),
+        ("Taşkent Binası 1", SABIT_TASKENT_1, SABIT_TASKENT_YUKSEKLIK, SABIT_TASKENT_KAT),
+        ("Taşkent Binası 2", SABIT_TASKENT_2, SABIT_TASKENT_YUKSEKLIK, SABIT_TASKENT_KAT),
+        ("Taşkent Binası 3", SABIT_TASKENT_3, SABIT_TASKENT_YUKSEKLIK, SABIT_TASKENT_KAT),
     ]
     for isim, taban, yukseklik, kat in sabitler:
         if any(isim in b["isim"] for b in onemli):

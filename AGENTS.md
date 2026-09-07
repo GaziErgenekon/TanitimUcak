@@ -44,6 +44,9 @@ Uzak repo: https://github.com/GaziErgenekon/TanitimUcak
   way 418133405 poligonu sabitlendi (`SABIT_DEKANLIK_*`, 16 nokta, 18 m).
   Üretici sabit poligonları (`sabitler` listesi) her üretimde başa ekler ve
   çakışan arka plan binasını çıkarır.
+- **Taşkent:** OSM'de kaydı yok. Link çevresindeki bitişik 3 blok (OSM way
+  418129562/418129558/418133414) "Taşkent Binası 1/2/3" olarak sabitlendi
+  (`SABIT_TASKENT_*`, 18 m).
 - **Bina geometrisi:** `THREE.Shape((x,-z))` → Extrude → `rotateX(-π/2)`. Yan+çatı için
   2 materyal grubu (0/1). Duvarlarda prosedürel pencere dokusu (3×6m karo, 2×2 küçük
   pencere, tekrarlı UV;
