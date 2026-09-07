@@ -34,6 +34,12 @@ ONBELLEK = os.path.join(os.path.dirname(os.path.abspath(__file__)), "osm_onbelle
 
 # Kullanıcının OSM linkinden doğrulanmış Rektörlük konumu (OSM'de isimli değil):
 REKTORLUK_LAT, REKTORLUK_LON = 39.939483, 32.822092
+# SABİT REKTÖRLÜK: OSM way 418594116 poligonu, merkezi kullanıcının işaretine
+# (136,447) taşınmış hali. Otomatik seçim KAPALI — bu poligon korunur.
+# Değiştirmek için bu listeyi düzenle.
+SABIT_REKTORLUK_TABAN = [[141.3, 428.8], [139.2, 425.9], [143.3, 422.9], [149.6, 431.5], [152.2, 429.6], [145.9, 421.0], [150.8, 417.4], [160.3, 430.4], [152.8, 435.9], [154.7, 438.5], [162.3, 432.9], [172.3, 446.7], [160.6, 455.3], [151.9, 443.4], [142.3, 450.4], [147.6, 457.7], [142.6, 461.4], [137.3, 454.1], [127.7, 461.1], [136.4, 473.0], [124.7, 481.6], [114.6, 467.8], [122.2, 462.2], [120.3, 459.6], [112.7, 465.2], [103.2, 452.2], [108.1, 448.6], [114.4, 457.2], [117.1, 455.3], [110.8, 446.6], [114.9, 443.6], [117.1, 446.6]]
+SABIT_REKTORLUK_YUKSEKLIK = 12
+SABIT_REKTORLUK_KAT = 4
 
 ENDPOINTLER = [
     "https://overpass.kumi.systems/api/interpreter",
@@ -242,37 +248,34 @@ def main():
                                    "merkez": [round(cx, 1), round(cz, 1)],
                                    "yaricap": round(r, 1)})
 
-    # --- Rektörlük: kullanıcının işaret noktasına EN YAKIN bina (min 400 m²) ---
-    # OSM'de isimli değil; kullanıcı onaylı kural: fıskiye/park bitişiğindeki blok.
-    rek_x, rek_z = d2.xy(REKTORLUK_LAT, REKTORLUK_LON)
+    # --- Rektörlük: SABİT poligon (otomatik seçim kapalı, kullanıcı onaylı) ---
+    def _nokta_icinde(x, z, pol):
+        icinde = False
+        n = len(pol)
+        for i in range(n):
+            x1, z1 = pol[i]
+            x2, z2 = pol[(i + 1) % n]
+            if ((z1 > z) != (z2 > z)) and (x < (x2 - x1) * (z - z1) / (z2 - z1) + x1):
+                icinde = not icinde
+        return icinde
+
     if not any("Rektörlük" in b["isim"] for b in onemli):
-        en_yakin, en_alan, en_d, en_id = None, 0.0, 250.0, None
-        for duz, _, wid in arka_plan:
-            pol = [[duz[i], duz[i + 1]] for i in range(0, len(duz), 2)]
-            alan = poligon_alani(pol)
-            if alan < 400:
-                continue
-            cx, cz = merkez(pol)
-            d = math.hypot(cx - rek_x, cz - rek_z)
-            if d < en_d:
-                en_d, en_alan, en_yakin, en_id = d, alan, pol, wid
-        if en_yakin:
-            arka_plan = [a for a in arka_plan
-                         if not all(en_yakin[i] == [a[0][j], a[0][j + 1]]
-                                    for i in range(len(en_yakin))
-                                    for j in [2 * i] if j + 1 < len(a[0]))]
-            onemli.insert(0, {"isim": "Rektörlük", "taban": en_yakin,
-                              "yukseklik": yukseklik_tahmin(en_yakin)[0],
-                              "kat": yukseklik_tahmin(en_yakin)[1]})
-            print(f"  Rektörlük: OSM way {en_id} alındı "
-                  f"({en_alan:.0f} m², işaret noktasına {en_d:.0f} m)")
-        else:
-            onemli.insert(0, {
-                "isim": "Rektörlük (yer tutucu - düzenleme moduyla poligonu düzenle)",
-                "taban": [[rek_x - 22, rek_z - 14], [rek_x + 22, rek_z - 14],
-                           [rek_x + 22, rek_z + 14], [rek_x - 22, rek_z + 14]],
-                "yukseklik": 21, "kat": 7})
-            print("  Rektörlük: yakın OSM binası yok, gerçek konumda yer tutucu eklendi")
+        # Sabit poligonla çakışan arka plan binalarını çıkar (çift çizim olmasın)
+        once = len(arka_plan)
+        sabit = [[float(v) for v in p] for p in SABIT_REKTORLUK_TABAN]
+        tutulan = []
+        for a in arka_plan:
+            pol = [[a[0][i], a[0][i + 1]] for i in range(0, len(a[0]), 2)]
+            cx = sum(p[0] for p in pol) / len(pol)
+            cz = sum(p[1] for p in pol) / len(pol)
+            if not _nokta_icinde(cx, cz, sabit):
+                tutulan.append(a)
+        arka_plan = tutulan
+        onemli.insert(0, {"isim": "Rektörlük", "taban": SABIT_REKTORLUK_TABAN,
+                          "yukseklik": SABIT_REKTORLUK_YUKSEKLIK,
+                          "kat": SABIT_REKTORLUK_KAT})
+        print(f"  Rektörlük: sabit poligon yerleştirildi "
+              f"({len(SABIT_REKTORLUK_TABAN)} nokta, {once - len(arka_plan)} çakışan bina çıkarıldı)")
 
     onemli = sorted(onemli, key=lambda b: -poligon_alani(b["taban"]))[:ONEMLI_BINA_LIMITI]
 

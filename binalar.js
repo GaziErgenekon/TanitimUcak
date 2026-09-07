@@ -125,10 +125,18 @@ const ONEMLI_BINALAR = [
     detay: { katsayisi: 7 }
   },
   {
+    isim: "Rektörlük",
+    taban: [[141.3, 428.8], [139.2, 425.9], [143.3, 422.9], [149.6, 431.5], [152.2, 429.6], [145.9, 421.0], [150.8, 417.4], [160.3, 430.4], [152.8, 435.9], [154.7, 438.5], [162.3, 432.9], [172.3, 446.7], [160.6, 455.3], [151.9, 443.4], [142.3, 450.4], [147.6, 457.7], [142.6, 461.4], [137.3, 454.1], [127.7, 461.1], [136.4, 473.0], [124.7, 481.6], [114.6, 467.8], [122.2, 462.2], [120.3, 459.6], [112.7, 465.2], [103.2, 452.2], [108.1, 448.6], [114.4, 457.2], [117.1, 455.3], [110.8, 446.6], [114.9, 443.6], [117.1, 446.6]],
+    yukseklik: 12,
+    renk: 0xd0b49a,
+    catRengi: 0x6e6e6e,
+    detay: { katsayisi: 4 }
+  },
+  {
     isim: "Hakimler ve Savcılar Yüksek Kurulu",
     taban: [[318.3, 562.6], [285.9, 545.4], [305.1, 509.3], [337.4, 526.5]],
     yukseklik: 18,
-    renk: 0xd0b49a,
+    renk: 0xc2b6a3,
     catRengi: 0x6e6e6e,
     detay: { katsayisi: 6 }
   },
@@ -136,7 +144,7 @@ const ONEMLI_BINALAR = [
     isim: "Eğitim Fakültesi F Blok",
     taban: [[107.0, 91.4], [120.2, 90.4], [120.3, 91.6], [128.8, 90.9], [128.7, 89.6], [141.8, 88.5], [142.5, 96.9], [140.2, 97.1], [142.0, 119.8], [144.2, 119.6], [145.4, 133.9], [132.2, 134.9], [131.8, 130.3], [123.5, 131.0], [123.9, 135.7], [110.7, 136.8], [109.6, 122.5], [111.8, 122.3], [110.0, 99.6], [107.7, 99.8]],
     yukseklik: 18,
-    renk: 0xc2b6a3,
+    renk: 0xadb8c4,
     catRengi: 0x6e6e6e,
     detay: { katsayisi: 6 }
   },
@@ -144,7 +152,7 @@ const ONEMLI_BINALAR = [
     isim: "Gazi Üniversitesi Spor Bilimleri Fakültesi",
     taban: [[82.2, 33.1], [111.4, 25.2], [122.3, 65.8], [93.0, 73.6], [87.8, 54.1]],
     yukseklik: 18,
-    renk: 0xadb8c4,
+    renk: 0xcabfb2,
     catRengi: 0x6e6e6e,
     detay: { katsayisi: 6 }
   },
@@ -152,7 +160,7 @@ const ONEMLI_BINALAR = [
     isim: "Ankara İl Milli Eğitim Müdürlüğü",
     taban: [[433.5, 744.3], [445.2, 756.8], [399.1, 799.7], [387.5, 787.2]],
     yukseklik: 15,
-    renk: 0xcabfb2,
+    renk: 0xb0a896,
     catRengi: 0x6e6e6e,
     detay: { katsayisi: 5 }
   },
@@ -160,7 +168,7 @@ const ONEMLI_BINALAR = [
     isim: "Gazi Mahallesi Tren İstasyonu",
     taban: [[-683.3, -57.4], [-711.5, -49.0], [-715.5, -62.3], [-650.7, -81.5], [-646.7, -68.1], [-675.4, -59.6], [-670.8, -44.4], [-678.8, -42.1]],
     yukseklik: 15,
-    renk: 0xb0a896,
+    renk: 0xd8c9a8,
     catRengi: 0x6e6e6e,
     detay: { katsayisi: 5 }
   },
@@ -168,7 +176,7 @@ const ONEMLI_BINALAR = [
     isim: "Ankara TVF Spor Lisesi",
     taban: [[52.3, 790.1], [45.2, 807.5], [30.4, 801.4], [29.8, 802.7], [17.4, 796.1], [16.9, 797.5], [10.5, 794.9], [11.0, 793.6], [-3.8, 787.5], [3.3, 770.2], [42.8, 784.9], [42.4, 786.1]],
     yukseklik: 15,
-    renk: 0xd8c9a8,
+    renk: 0xcfc4b0,
     catRengi: 0x6e6e6e,
     detay: { katsayisi: 5 }
   },
@@ -176,7 +184,7 @@ const ONEMLI_BINALAR = [
     isim: "Camii",
     taban: [[-691.7, 150.9], [-716.6, 159.4], [-709.7, 179.6], [-684.8, 171.1]],
     yukseklik: 12,
-    renk: 0xcfc4b0,
+    renk: 0xb8a98c,
     catRengi: 0x6e6e6e,
     detay: { katsayisi: 4 }
   },
@@ -184,7 +192,7 @@ const ONEMLI_BINALAR = [
     isim: "Gazi Kültür Merkezi",
     taban: [[69.6, 644.2], [63.8, 648.3], [60.7, 644.0], [59.7, 644.7], [54.0, 636.7], [84.3, 615.0], [93.1, 627.3], [87.3, 631.5]],
     yukseklik: 12,
-    renk: 0xb8a98c,
+    renk: 0xc9bdbd,
     catRengi: 0x6e6e6e,
     detay: { katsayisi: 4 }
   },
@@ -192,21 +200,13 @@ const ONEMLI_BINALAR = [
     isim: "İHL Hacı Durali Akan Camii",
     taban: [[210.0, -20.6], [215.6, -22.4], [214.9, -24.4], [219.3, -25.9], [223.7, -27.3], [224.4, -25.3], [230.0, -27.1], [237.6, -3.8], [217.7, 2.7]],
     yukseklik: 12,
-    renk: 0xc9bdbd,
+    renk: 0xb5c2c9,
     catRengi: 0x6e6e6e,
     detay: { katsayisi: 4 }
   },
   {
     isim: "Diş Hekimliği Fakültesi",
     taban: [[342.4, 714.6], [371.8, 686.2], [380.4, 695.1], [351.0, 723.5], [349.1, 721.5]],
-    yukseklik: 12,
-    renk: 0xb5c2c9,
-    catRengi: 0x6e6e6e,
-    detay: { katsayisi: 4 }
-  },
-  {
-    isim: "Rektörlük",
-    taban: [[153.3, 509.6], [194.5, 532.8], [192.9, 538.6], [186.9, 537.1], [185.1, 540.1], [149.1, 519.8]],
     yukseklik: 12,
     renk: 0xd0b49a,
     catRengi: 0x6e6e6e,
@@ -623,7 +623,7 @@ const YOLLAR = [
 
 // ===== FISKIYELER / NOKTA YAPILAR (merkez + yaricap) =====
 const FISKIYELER = [
-  // Elle: Rektörlük önündeki fıskiye (OSM linki: 2. işaret) —
+  // Elle: Rektörlük önündeki fıskiye (kullanıcı OSM linki 39.940102, 32.822988) —
   { isim: "Rektörlük Fıskiyesi", merkez: [212, 378], yaricap: 3 },
 ];
 
@@ -1002,6 +1002,7 @@ const ARKA_PLAN_BINALAR = [
   [[526.0, 102.5, 536.8, 107.7, 532.7, 116.2, 521.9, 111.1], 6],
   [[740.6, 332.3, 767.4, 349.8, 757.6, 364.9, 730.8, 347.4], 12],
   [[173.3, 551.0, 179.5, 553.3, 172.9, 572.6, 166.3, 570.2], 6],
+  [[153.3, 509.6, 194.5, 532.8, 192.9, 538.6, 186.9, 537.1, 185.1, 540.1, 149.1, 519.8], 12],
   [[41.3, 882.5, 63.3, 891.7, 46.8, 931.4, 32.1, 925.3, 39.1, 908.5, 31.7, 905.4], 15],
   [[192.9, 538.6, 190.7, 546.2, 184.1, 544.4, 186.9, 537.1], 6],
   [[106.7, 852.2, 127.5, 860.9, 124.2, 868.8, 119.5, 866.8, 117.1, 872.7, 105.6, 867.9, 108.0, 862.1, 103.4, 860.1], 9],
