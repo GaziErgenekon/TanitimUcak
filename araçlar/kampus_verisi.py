@@ -313,8 +313,6 @@ def main():
     # OSM kaçırdıysa görselden elle eklenenler (2 ve 3 numaralı işaretler)
     s.append('  // Elle: Rektörlük önü parkı (2. işaret) —')
     s.append('  { isim: "Rektörlük Parkı", tip: "park", taban: [[163,351],[273,401],[208,451],[93,401],[163,351]] },')
-    s.append('  // Elle: Teknoloji Fakültesi parkı (3. işaret) —')
-    s.append('  { isim: "Teknoloji Parkı", tip: "garden", taban: [[-147,518],[-7,468],[33,588],[-87,668],[-147,518]] },')
     s.append("];")
     s.append("")
     s.append("// ===== YAYA YOLLARI (poligon degil cizgi; [duzluk, genislik(m), tip]) =====")

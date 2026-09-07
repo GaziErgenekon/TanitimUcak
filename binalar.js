@@ -288,8 +288,6 @@ const PARKLAR = [
   { isim: "Yesil alan", tip: "grass", taban: [[763.6, -408.2], [771.3, -402.1], [784.2, -395.7], [797.5, -392.6], [805.5, -392.7], [824.4, -396.5], [835.2, -401.3], [834.9, -402.4], [825.3, -400.5], [797.5, -399.8], [763.5, -410.3]] },
   // Elle: Rektörlük önü parkı (2. işaret) —
   { isim: "Rektörlük Parkı", tip: "park", taban: [[163,351],[273,401],[208,451],[93,401],[163,351]] },
-  // Elle: Teknoloji Fakültesi parkı (3. işaret) —
-  { isim: "Teknoloji Parkı", tip: "garden", taban: [[-147,518],[-7,468],[33,588],[-87,668],[-147,518]] },
 ];
 
 // ===== YAYA YOLLARI (poligon degil cizgi; [duzluk, genislik(m), tip]) =====
