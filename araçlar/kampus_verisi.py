@@ -40,6 +40,10 @@ REKTORLUK_LAT, REKTORLUK_LON = 39.939483, 32.822092
 SABIT_REKTORLUK_TABAN = [[154.2, 452.3], [157.1, 450.2], [160.1, 454.3], [151.5, 460.6], [153.4, 463.2], [162.0, 456.9], [165.6, 461.8], [152.6, 471.3], [147.1, 463.8], [144.5, 465.7], [150.1, 473.3], [136.3, 483.3], [127.7, 471.6], [139.6, 462.9], [132.6, 453.3], [125.3, 458.6], [121.6, 453.6], [128.9, 448.3], [121.9, 438.7], [110.0, 447.4], [101.4, 435.7], [115.2, 425.6], [120.8, 433.2], [123.4, 431.3], [117.8, 423.7], [130.8, 414.2], [134.4, 419.1], [125.8, 425.4], [127.7, 428.1], [136.4, 421.8], [139.4, 425.9], [136.4, 428.1]]
 SABIT_REKTORLUK_YUKSEKLIK = 24  # 4 kat × 3 m × 2 ölçek
 SABIT_REKTORLUK_KAT = 4
+# SABİT DEKANLIK: OSM way 418133405 poligonu (kullanıcı OSM linki 39.938969, 32.820167).
+SABIT_DEKANLIK_TABAN = [[-25.3, 493.8], [-24.4, 495.0], [-15.8, 488.7], [-16.7, 487.5], [-10.5, 483.0], [-9.6, 484.2], [1.5, 476.1], [9.3, 486.9], [-48.5, 529.0], [-56.4, 518.3], [-45.3, 510.2], [-46.2, 509.0], [-40.1, 504.5], [-39.2, 505.7], [-30.5, 499.4], [-31.4, 498.2]]
+SABIT_DEKANLIK_YUKSEKLIK = 18  # 3 kat × 3 m × 2 ölçek (tahmini)
+SABIT_DEKANLIK_KAT = 3
 
 ENDPOINTLER = [
     "https://overpass.kumi.systems/api/interpreter",
@@ -263,10 +267,18 @@ def main():
                 icinde = not icinde
         return icinde
 
-    if not any("Rektörlük" in b["isim"] for b in onemli):
+    # Sabit poligonlar (kullanıcı onaylı, otomatik seçim kapalı)
+    sabitler = [
+        ("Rektörlük", SABIT_REKTORLUK_TABAN, SABIT_REKTORLUK_YUKSEKLIK, SABIT_REKTORLUK_KAT),
+        ("Teknoloji Fakültesi Dekanlığı", SABIT_DEKANLIK_TABAN,
+         SABIT_DEKANLIK_YUKSEKLIK, SABIT_DEKANLIK_KAT),
+    ]
+    for isim, taban, yukseklik, kat in sabitler:
+        if any(isim in b["isim"] for b in onemli):
+            continue
         # Sabit poligonla çakışan arka plan binalarını çıkar (çift çizim olmasın)
         once = len(arka_plan)
-        sabit = [[float(v) for v in p] for p in SABIT_REKTORLUK_TABAN]
+        sabit = [[float(v) for v in p] for p in taban]
         tutulan = []
         for a in arka_plan:
             pol = [[a[0][i], a[0][i + 1]] for i in range(0, len(a[0]), 2)]
@@ -275,11 +287,10 @@ def main():
             if not _nokta_icinde(cx, cz, sabit):
                 tutulan.append(a)
         arka_plan = tutulan
-        onemli.insert(0, {"isim": "Rektörlük", "taban": SABIT_REKTORLUK_TABAN,
-                          "yukseklik": SABIT_REKTORLUK_YUKSEKLIK,
-                          "kat": SABIT_REKTORLUK_KAT})
-        print(f"  Rektörlük: sabit poligon yerleştirildi "
-              f"({len(SABIT_REKTORLUK_TABAN)} nokta, {once - len(arka_plan)} çakışan bina çıkarıldı)")
+        onemli.insert(0, {"isim": isim, "taban": taban,
+                          "yukseklik": yukseklik, "kat": kat})
+        print(f"  {isim}: sabit poligon yerleştirildi "
+              f"({len(taban)} nokta, {once - len(arka_plan)} çakışan bina çıkarıldı)")
 
     onemli = sorted(onemli, key=lambda b: -poligon_alani(b["taban"]))[:ONEMLI_BINA_LIMITI]
 

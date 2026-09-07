@@ -40,11 +40,17 @@ Uzak repo: https://github.com/GaziErgenekon/TanitimUcak
   ≥400 m² binayı seçer (şu an OSM way 418594116 değil, **way 418645330**:
   45×31 m, merkez ~177,530 — parkın güney bitişiği). Şüpheliyse binalar.js'ten elle
   düzelt (düzenleme modu + E tuşu ile konum bulunur).
+- **Dekanlık:** OSM'de kaydı yok. Kullanıcı linkiyle (39.938969, 32.820167) OSM
+  way 418133405 poligonu sabitlendi (`SABIT_DEKANLIK_*`, 16 nokta, 18 m).
+  Üretici sabit poligonları (`sabitler` listesi) her üretimde başa ekler ve
+  çakışan arka plan binasını çıkarır.
 - **Bina geometrisi:** `THREE.Shape((x,-z))` → Extrude → `rotateX(-π/2)`. Yan+çatı için
   2 materyal grubu (0/1). Duvarlarda prosedürel pencere dokusu (3×6m karo, 2×2 küçük
   pencere, tekrarlı UV;
   arka plan tek doku, önemlilerde bina başına + `pencere` alanından ayarlanır).
-  Arka plan tek merge mesh. Yollar: genişlikli şerit (ribbon)
+  Arka plan duvar/çatı AYRI iki merge mesh (tek malzemeli). NOT: mergeGeometries
+  grupları düşürür; malzeme dizili tek mesh HİÇ ÇİZİLMEZ — `dilimle()` ile ayır.
+  Yollar: genişlikli şerit (ribbon)
   tek mesh + vertex rengi (ana=asfalt, service=gri, yaya=açık). Parklar: ShapeGeometry
   (y=0.05). Fıskiye: mavi daire + silindir sütun. Spor: futbol yeşil, pist kırmızı,
   tenis mavi (y=0.06). Veri listeleri `typeof` korumasıyla okunur (eski binalar.js
