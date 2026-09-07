@@ -12,7 +12,8 @@ Uzak repo: https://github.com/GaziErgenekon/TanitimUcak
   veri kaynakları. `binalar.js` globallerini okur. Başlangıç: Teknoloji Fakültesi
   üstü (15, 40, 639), kuzeye bakış.
 - `binalar.js` — Kampüs çevre verisi (ELLE DÜZENLENEBİLİR):
-  - `ONEMLI_BINALAR`: isimli binalar (taban [x,z], yükseklik, renk, catRengi, detay).
+  - `ONEMLI_BINALAR`: isimli binalar (taban [x,z], yükseklik, renk, catRengi,
+    pencere:{yogunluk,renk,isikOran}/false, detay).
   - `ARKA_PLAN_BINALAR`: kompakt [duzpoligon, yukseklik] (OSM otomatik).
   - `PARKLAR`: {isim, tip, taban} düz yeşil poligonlar.
   - `YOLLAR`: [duzluk, genislik(m), tip] — tip: ana/service/footway/path/pedestrian
@@ -40,7 +41,9 @@ Uzak repo: https://github.com/GaziErgenekon/TanitimUcak
   45×31 m, merkez ~177,530 — parkın güney bitişiği). Şüpheliyse binalar.js'ten elle
   düzelt (düzenleme modu + E tuşu ile konum bulunur).
 - **Bina geometrisi:** `THREE.Shape((x,-z))` → Extrude → `rotateX(-π/2)`. Yan+çatı için
-  2 materyal grubu (0/1). Arka plan tek merge mesh. Yollar: genişlikli şerit (ribbon)
+  2 materyal grubu (0/1). Duvarlarda prosedürel pencere dokusu (3m karo, tekrarlı UV;
+  arka plan tek doku, önemlilerde bina başına + `pencere` alanından ayarlanır).
+  Arka plan tek merge mesh. Yollar: genişlikli şerit (ribbon)
   tek mesh + vertex rengi (ana=asfalt, service=gri, yaya=açık). Parklar: ShapeGeometry
   (y=0.05). Fıskiye: mavi daire + silindir sütun. Spor: futbol yeşil, pist kırmızı,
   tenis mavi (y=0.06). Veri listeleri `typeof` korumasıyla okunur (eski binalar.js
