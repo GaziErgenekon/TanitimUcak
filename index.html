@@ -315,40 +315,115 @@ for (const b of ONEMLI_L) {
   onemliListesi.push({ isim: b.isim, merkez: [cx, cz], yukseklik: b.yukseklik });
 }
 
-// ===== UÇAK MODELİ ============================================================
+// ===== EJDERHA MODELİ (burun -Z'ye dönük; grup adı uçuş koduyla aynı) ========
 const ucak = new THREE.Group();
+const govdeGrubu = new THREE.Group();   // süzülme/sallanma animasyonu için iç grup
+ucak.add(govdeGrubu);
+const kanatSagPivot = new THREE.Group();
+const kanatSolPivot = new THREE.Group();
+let kuyruk2 = null, kuyruk3 = null;
 {
-  const govde = new THREE.Mesh(
-    new THREE.ConeGeometry(0.45, 2.6, 10),
-    new THREE.MeshLambertMaterial({ color: 0xd8402f })
-  );
-  govde.rotation.x = -Math.PI / 2;             // burnu -Z'ye dönük
-  ucak.add(govde);
-  const kanat = new THREE.Mesh(
-    new THREE.BoxGeometry(4.6, 0.1, 0.85),
-    new THREE.MeshLambertMaterial({ color: 0xe8e8e8 })
-  );
-  kanat.position.set(0, -0.1, 0.15);
-  ucak.add(kanat);
-  const kuyruk = new THREE.Mesh(
-    new THREE.BoxGeometry(1.6, 0.08, 0.5),
-    new THREE.MeshLambertMaterial({ color: 0xcccccc })
-  );
-  kuyruk.position.set(0, 0, 1.05);
-  ucak.add(kuyruk);
-  const dikey = new THREE.Mesh(
-    new THREE.BoxGeometry(0.08, 0.75, 0.6),
-    new THREE.MeshLambertMaterial({ color: 0xd8402f })
-  );
-  dikey.position.set(0, 0.35, 1.1);
-  ucak.add(dikey);
+  const deriMat = new THREE.MeshLambertMaterial({ color: 0x2e7d46 });
+  const karinMat = new THREE.MeshLambertMaterial({ color: 0xd8c98a });
+  const zarMat = new THREE.MeshLambertMaterial({ color: 0x46b15c, side: THREE.DoubleSide });
+  const boynuzMat = new THREE.MeshLambertMaterial({ color: 0xe8e0c8 });
+
+  // gövde + karın
+  const govde = new THREE.Mesh(new THREE.SphereGeometry(0.55, 14, 12), deriMat);
+  govde.scale.set(1, 0.9, 2.2);
+  govdeGrubu.add(govde);
+  const karin = new THREE.Mesh(new THREE.SphereGeometry(0.45, 12, 10), karinMat);
+  karin.scale.set(0.85, 0.7, 1.9);
+  karin.position.set(0, -0.18, -0.1);
+  govdeGrubu.add(karin);
+
+  // boyun + kafa (ileride, yukarıda)
+  const boyun = new THREE.Mesh(new THREE.CylinderGeometry(0.28, 0.4, 1.0, 10), deriMat);
+  boyun.position.set(0, 0.45, -1.15);
+  boyun.rotation.x = 0.5;
+  govdeGrubu.add(boyun);
+  const kafa = new THREE.Mesh(new THREE.SphereGeometry(0.42, 14, 12), deriMat);
+  kafa.position.set(0, 0.75, -1.7);
+  kafa.scale.set(1, 0.9, 1.15);
+  govdeGrubu.add(kafa);
+  const burun = new THREE.Mesh(new THREE.ConeGeometry(0.26, 0.6, 10), deriMat);
+  burun.position.set(0, 0.68, -2.25);
+  burun.rotation.x = -Math.PI / 2;
+  govdeGrubu.add(burun);
+  // boynuzlar (geriye yatık) + gözler
+  for (const s of [-1, 1]) {
+    const boynuz = new THREE.Mesh(new THREE.ConeGeometry(0.09, 0.55, 8), boynuzMat);
+    boynuz.position.set(s * 0.22, 1.05, -1.45);
+    boynuz.rotation.x = 0.7;
+    govdeGrubu.add(boynuz);
+    const goz = new THREE.Mesh(new THREE.SphereGeometry(0.07, 8, 8),
+      new THREE.MeshBasicMaterial({ color: 0xffd94d }));
+    goz.position.set(s * 0.24, 0.85, -1.95);
+    govdeGrubu.add(goz);
+  }
+
+  // kuyruk: 3 boğum, uçlara doğru incelir (sallanma için pivotlu)
+  const kuyruk1 = new THREE.Group();
+  kuyruk1.position.set(0, 0.05, 1.1);
+  govdeGrubu.add(kuyruk1);
+  const bogum1 = new THREE.Mesh(new THREE.ConeGeometry(0.34, 1.1, 10), deriMat);
+  bogum1.rotation.x = Math.PI / 2;
+  bogum1.position.z = 0.55;
+  kuyruk1.add(bogum1);
+  kuyruk2 = new THREE.Group();
+  kuyruk2.position.z = 1.05;
+  kuyruk1.add(kuyruk2);
+  const bogum2 = new THREE.Mesh(new THREE.ConeGeometry(0.22, 1.0, 10), deriMat);
+  bogum2.rotation.x = Math.PI / 2;
+  bogum2.position.z = 0.5;
+  kuyruk2.add(bogum2);
+  kuyruk3 = new THREE.Group();
+  kuyruk3.position.z = 0.95;
+  kuyruk2.add(kuyruk3);
+  const bogum3 = new THREE.Mesh(new THREE.ConeGeometry(0.12, 0.9, 8), deriMat);
+  bogum3.rotation.x = Math.PI / 2;
+  bogum3.position.z = 0.45;
+  kuyruk3.add(bogum3);
+  const diken = new THREE.Mesh(new THREE.ConeGeometry(0.1, 0.35, 8), boynuzMat);
+  diken.position.z = 0.95;
+  diken.rotation.x = Math.PI / 2;
+  kuyruk3.add(diken);
+
+  // bacaklar (4 kısa silindir)
+  for (const [sx, sz] of [[-1, -0.5], [1, -0.5], [-1, 0.7], [1, 0.7]]) {
+    const bacak = new THREE.Mesh(new THREE.CylinderGeometry(0.09, 0.11, 0.55, 8), deriMat);
+    bacak.position.set(sx * 0.42, -0.5, sz);
+    bacak.rotation.z = sx * 0.35;
+    govdeGrubu.add(bacak);
+  }
+
+  // kanat zarı (yarasa kanadı formu, +X'e uzanır; solu aynalanır)
+  function kanatZari() {
+    const s = new THREE.Shape();
+    s.moveTo(0, 0.1);
+    s.lineTo(2.6, 0.35);
+    s.lineTo(1.7, -0.55);
+    s.lineTo(0.9, -0.35);
+    s.lineTo(0, -0.7);
+    s.closePath();
+    return new THREE.ShapeGeometry(s);
+  }
+  kanatSagPivot.position.set(0.35, 0.35, -0.2);
+  kanatSagPivot.add(new THREE.Mesh(kanatZari(), zarMat));
+  govdeGrubu.add(kanatSagPivot);
+  kanatSolPivot.position.set(-0.35, 0.35, -0.2);
+  const solZar = new THREE.Mesh(kanatZari(), zarMat);
+  solZar.scale.x = -1;
+  kanatSolPivot.add(solZar);
+  govdeGrubu.add(kanatSolPivot);
 }
 sahne.add(ucak);
 ucak.rotation.order = 'YXZ';
+let ejderhaT = 0;   // kanat çırpma/sallanma saati
 
 // ===== UÇUŞ DURUMU ============================================================
-let konum = new THREE.Vector3(0, 30, 0);   // başlangıç irtifası 30 m
-let yaw = 0;
+let konum = new THREE.Vector3(15, 40, 639);   // başlangıç: Teknoloji Fakültesi üstü
+let yaw = 0;   // kuzeye (kampüs merkezine) bakış
 let kameraModu = 'takip';                  // 'takip' | 'kokpit'
 
 // sensör ham + yumuşatılmış değerler
@@ -546,6 +621,16 @@ const saat = new THREE.Clock();
 function dongu() {
   requestAnimationFrame(dongu);
   const dt = Math.min(saat.getDelta(), 0.05);
+
+  // --- EJDERHA ANİMASYONU: çok ufak kanat çırpma + süzülme/sallanma ---
+  ejderhaT += dt;
+  const cirp = Math.sin(ejderhaT * 7) * 0.12;
+  kanatSagPivot.rotation.z = 0.10 + cirp;
+  kanatSolPivot.rotation.z = -0.10 - cirp;
+  govdeGrubu.position.y = Math.sin(ejderhaT * 7) * 0.06;
+  govdeGrubu.rotation.z = Math.sin(ejderhaT * 2.2) * 0.03;
+  kuyruk2.rotation.y = Math.sin(ejderhaT * 2.2 - 0.8) * 0.10;
+  kuyruk3.rotation.y = Math.sin(ejderhaT * 2.2 - 1.6) * 0.12;
 
   // --- GEZİN MODU: serbest kamera (uçaktan bağımsız) ---
   if (gezinModu) {

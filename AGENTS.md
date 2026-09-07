@@ -7,8 +7,10 @@ gerçek OpenStreetMap bina geometrileri üzerinde uçulur. Arayüz Türkçe.
 Uzak repo: https://github.com/GaziErgenekon/TanitimUcak
 
 ## Dosya Yapısı
-- `index.html` — Tek dosya uygulama: Three.js sahnesi, uçak modeli, uçuş dinamiği,
-  kameralar (takip/kokpit/gezin), HUD, veri kaynakları. `binalar.js` globallerini okur.
+- `index.html` — Tek dosya uygulama: Three.js sahnesi, ejderha modeli (kanat çırpma
+  + sallanma animasyonlu), uçuş dinamiği, kameralar (takip/kokpit/gezin), HUD,
+  veri kaynakları. `binalar.js` globallerini okur. Başlangıç: Teknoloji Fakültesi
+  üstü (15, 40, 639), kuzeye bakış.
 - `binalar.js` — Kampüs çevre verisi (ELLE DÜZENLENEBİLİR):
   - `ONEMLI_BINALAR`: isimli binalar (taban [x,z], yükseklik, renk, catRengi, detay).
   - `ARKA_PLAN_BINALAR`: kompakt [duzpoligon, yukseklik] (OSM otomatik).
