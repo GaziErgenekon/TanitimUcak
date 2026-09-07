@@ -4,62 +4,69 @@
 ESP32 (Lolin32 Lite) + MPU-6050 IMU ile fiziksel eğim kontrollü, tarayıcıda çalışan
 3D uçuş simülatörü. Gazi Üniversitesi (Beşevler/Yenimahalle, Ankara) kampüsünün
 gerçek OpenStreetMap bina geometrileri üzerinde uçulur. Arayüz Türkçe.
+Uzak repo: https://github.com/GaziErgenekon/TanitimUcak
 
 ## Dosya Yapısı
 - `index.html` — Tek dosya uygulama: Three.js sahnesi, uçak modeli, uçuş dinamiği,
-  kameralar, HUD, veri kaynakları. Üzerinde `binalar.js` global const'larını okur.
-- `binalar.js` — Kampüs bina verisi (ELLE DÜZENLENEBİLİR):
-  - `ONEMLI_BINALAR`: isimli önemli bina listesi (taban poligonu [x,z] metre,
-    yükseklik, renk, catRengi, detay). Kullanıcı bu listeyi düzenler.
-  - `ARKA_PLAN_BINALAR`: kompakt [duzpoligon, yukseklik] listeleri (OSM'den otomatik).
-  - Üreten: `araçlar/kampus_verisi.py` (Overpass API → bu dosyayı yeniden yazar).
-- `seri_kopru.py` — Firefox/Safari desteği için seri→WebSocket köprüsü.
-- `araçlar/kampus_verisi.py` — binalar.js üretici (stdlib only, Overpass GET).
+  kameralar (takip/kokpit/gezin), HUD, veri kaynakları. `binalar.js` globallerini okur.
+- `binalar.js` — Kampüs çevre verisi (ELLE DÜZENLENEBİLİR):
+  - `ONEMLI_BINALAR`: isimli binalar (taban [x,z], yükseklik, renk, catRengi, detay).
+  - `ARKA_PLAN_BINALAR`: kompakt [duzpoligon, yukseklik] (OSM otomatik).
+  - `PARKLAR`: {isim, tip, taban} düz yeşil poligonlar.
+  - `YOLLAR`: [duzluk, genislik(m), tip] — tip: ana/service/footway/path/pedestrian.
+  - `FISKIYELER`: {isim, merkez, yaricap}.
+  - Üreten: `araçlar/kampus_verisi.py` (Overpass → önbellek → bu dosya).
+- `esp32_ucak_kumandasi/esp32_ucak_kumandasi.ino` — Lolin32 Lite firmware:
+  MPU-6050 complementary filtre (pitch/roll, 50 Hz) + buton, CSV `pitch,roll,buton`.
+  Pinler: SDA=21, SCL=22, buton=13 (GND'ye, pull-up). Kütüphane: Adafruit MPU6050.
+  Eksen kuralı: X ileri, Z yukarı → pitch burun-yukarı +, roll sağa-yatış +.
+  (pitch gyroY'nin NEGATİFİnden, roll gyroX'in POZİTİFİnden gelir — fizik gereği.)
+- `seri_kopru.py` — Firefox/Safari için seri→WebSocket köprüsü (`ws://localhost:8765`).
+- `araçlar/kampus_verisi.py` — binalar.js üretici (stdlib only; dayanıklı istemci:
+  3 endpoint × GET/POST denemesi, `araçlar/osm_onbellek.json` önbelleği).
+- `.gitignore` — `__pycache__`, `libs/`, `.venv/`, `node_modules/`, `osm_onbellek.json`
+  repo DIŞINDA tutulur. (`osm_onbellek.json` yeniden üretilebilir ara veridir.)
 
 ## Mimari Kararlar
-- **Koordinat sistemi:** kampüs merkezi (39.9435 N, 32.8205 E) = (0,0).
-  x = doğu (+), z = güney (+), birim metre. Three.js'te -Z = kuzey/ileri yön.
-- **Bina geometrisi:** `THREE.Shape((x, -z))` → `ExtrudeGeometry` → `rotateX(-π/2)`.
-  Yan cephe + çatı için 2 materyal grubu (yan=0, çatı=1). Arka plan tek
-  `mergeGeometries` birleşik mesh (performans).
-- **Veri kaynakları (çift mod):** Web Serial API (Chromium) veya WebSocket
-  (`ws://localhost:8765`, seri_kopru.py). Ortak `satirIsle()` CSV parse:
-  `pitch,roll,butonState` (115200 baud, `\n` sonlu; buton 1=dolu, 0=basılı,
-  1→0 düşen kenarda kamera değişir).
-- **Sensör işleme:** EMA (α=0.15) + ±2° deadband + kalibrasyon offset'i
-  ("Sıfırla" butonu / C tuşu). İşaret düzeltmeleri `YURUT_PITCH/YURUT_ROLL` sabitleri.
-- **Uçuş:** sabit 25 m/s; roll → yaw dönüşü, pitch → irtifa; min irtifa 0.8 m;
-  ±1300 m uçuş sınırı.
-- **Kameralar:** takip (3. şahıs, lerp-arka takip) ↔ kokpit (1. şahıs).
-- **Düzenleme modu:** E tuşu/butonu → en yakın önemli bina bilgisi ya da yeni bina
-  şablonu (uçak konumundan) panel/konsola döker; kullanıcı binalar.js'e yapıştırır.
-- **Klavye simülasyonu:** checkbox; ok tuşları pitch/roll, Enter = kamera toggle.
-  Donanımsız test için.
+- **Koordinat:** kampüs merkezi (39.9435 N, 32.8205 E) = (0,0). x=doğu(+), z=güney(+),
+  metre. Three.js'te -Z = kuzey/ileri.
+- **Rektörlük:** OSM'de isimli değil. Kullanıcının OSM linki (39.939483, 32.822092 →
+  yerel ~136,447) çevresindeki en büyük üniversite bloğu otomatik seçilir
+  (şu an OSM way 418594116, 69×64 m, merkez ~66,332). Şüpheliyse binalar.js'ten elle
+  düzelt (düzenleme modu + E tuşu ile konum bulunur).
+- **Bina geometrisi:** `THREE.Shape((x,-z))` → Extrude → `rotateX(-π/2)`. Yan+çatı için
+  2 materyal grubu (0/1). Arka plan tek merge mesh. Yollar: genişlikli şerit (ribbon)
+  tek mesh + vertex rengi (ana=asfalt, service=gri, yaya=açık). Parklar: ShapeGeometry
+  (y=0.05). Fıskiye: mavi daire + silindir sütun.
+- **Veri kaynakları:** Web Serial (Chromium) veya WebSocket köprüsü. Ortak `satirIsle()`
+  CSV parse; buton 1→0 düşen kenarda kamera değişir.
+- **İşleme:** EMA α=0.15 + ±2° deadband + "Sıfırla"/C kalibrasyonu. `YURUT_*` işaret sabitleri.
+- **Uçuş:** 25 m/s sabit; roll→yaw (banklı dönüş), pitch→irtifa; min 0.8 m; ±1300 m sınır.
+- **Kameralar:** takip ↔ kokpit (buton/Enter) + **gezin modu** (G): WASD hareket,
+  ok tuşları bakış, Q/Z irtifa, +/- hız; uçaktan bağımsız, uçak uçmaya devam eder.
+- **Klavye simülasyonu:** ok tuşları (Sol=negatif roll → sola dönüş; sağ=pozitif).
+- **Düzenleme modu (E):** en yakın önemli bina bilgisi veya uçak konumundan yeni bina
+  şablonu panel/konsola döker → binalar.js'e yapıştır.
 
 ## Çalıştırma
 ```bash
-python3 -m http.server 8000        # Web Serial localhost güvenli bağlam ister
-# Chrome/Edge: "Seri Porttan Bağlan"
-# Firefox: terminale "PYTHONPATH=libs python3 seri_kopru.py" sonra "WebSocket ile Bağlan"
+python3 -m http.server 8000
+# Chrome/Edge: "Seri Porttan Bağlan" | Firefox: "PYTHONPATH=libs python3 seri_kopru.py" + "WebSocket ile Bağlan"
+# Arduino IDE: esp32_ucak_kumandasi.ino'yu Lolin32 Lite'a yükle (115200 baud izle)
 ```
 
-## Önemli Kısıtlar
-- Web Serial API yalnızca Chromium tabanlı tarayıcılarda var; Firefox için köprü.
-- ESP32'yi doğrudan ekrana (TFT) bağlayıp 3D render etmek pratik olarak imkânsız —
-  PC/Raspberry Pi gerekir (520 KB RAM, GPU yok).
-- Kampüs bina yükseklikleri tahmini (OSM'de height etiketi yok; 2-8 kat = 6-24 m,
-  taban alanından deterministik). Kullanıcı önemli binaların yüksekliğini elle verir.
-
-## Süreç Kararları (kullanıcı tercihleri)
-- Kampüs ortamı (basit şehir değil), gerçek uçuş dinamiği (sadece görsel tilt değil).
-- Önemli binalar kullanıcı tarafından binalar.js içinde elle düzenlenecek.
-- Rektörlük OSM'de isimli değildi: yer tutucu olarak eklendi, düzenleme moduyla konum
-  bulunabilir.
-- Yeni OSM verisi gerekince `python3 araçlar/kampus_verisi.py` binalar.js'i
-  YENİDEN ÜRETİR — elle düzenlemeler ONEMLI_BINALAR'da korunmak isteniyorsa
-  üretim öncesi kopyala.
+## Kısıtlar / Notlar
+- Web Serial yalnızca Chromium; ESP32'de 3D render imkânsız (PC/Pi gerekir).
+- OSM'de bina `height` yok → 2-8 kat (6-24 m) taban-alan tahmini.
+- Overpass sık 504 verir → üretici önbelleğe düşer; `osm_onbellek.json` commitlenmez.
+- binalar.js'i yeniden üretmek elle ONEMLI düzenlemelerini EZER — önce yedekle.
+- arduino-cli bu makinede yok; .ino derleme doğrulaması yapılamadı (API kullanımı standart,
+  filtre matematiği Python simülasyonuyla doğrulandı).
 
 ## Testler
-- `node --check`, geometri doğrulama testi /tmp/opencode/geo/test.mjs (three@0.160).
-- Köprü e2e: /tmp/opencode/ws_kopru_testi.py (pty → seri_kopru.py → ws istemcisi).
-- CDN (jsdelivr three@0.160.0) erişilebilir.
+- `node --check` (index.html modülü + binalar.js).
+- Geometri testi /tmp/opencode/geo/test.mjs (three@0.160, npm --prefix ile kurulur):
+  extrude yönü, materyal grupları, merge, 35 önemli bina, Rektörlük konumu,
+  PARKLAR/YOLLAR/FISKIYELER geçerliliği, ±1300 m kapsam.
+- Köprü e2e: pty → seri_kopru.py → ws istemcisi (PYTHONPATH=/tmp/opencode/libs).
+- CDN jsdelivr three@0.160.0 erişilebilir.

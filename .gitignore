@@ -1,0 +1,26 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+.venv/
+venv/
+libs/
+
+# Node (testler için geçici kurulumlar repo dışındadır)
+node_modules/
+package.json
+package-lock.json
+
+# Üretilen / önbellek verisi (yeniden üretilebilir)
+araçlar/osm_onbellek.json
+
+# Editör / işletim sistemi
+.vscode/
+.idea/
+*.swp
+*~
+.DS_Store
+Thumbs.db
+
+# Log
+*.log

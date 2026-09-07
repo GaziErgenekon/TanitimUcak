@@ -190,7 +190,7 @@ def main():
                 duz = []
                 for x, z in pol:
                     duz.extend([x, z])
-                arka_plan.append([duz, yuk])
+                arka_plan.append([duz, yuk, e.get("id")])
 
         elif tags.get("highway") in ("footway", "path", "pedestrian", "service"):
             pol = rdp(coords, 0.8)
@@ -224,13 +224,13 @@ def main():
     rek_x, rek_z = d2.xy(REKTORLUK_LAT, REKTORLUK_LON)
     if not any("Rektörlük" in b["isim"] for b in onemli):
         # Yakınlık 200 m içindeki en BÜYÜK arka plan binasını al (rektörlük adayı)
-        en_yakin, en_alan, en_d = None, 0.0, 200.0
-        for duz, _ in arka_plan:
+        en_yakin, en_alan, en_d, en_id = None, 0.0, 200.0, None
+        for duz, _, wid in arka_plan:
             pol = [[duz[i], duz[i + 1]] for i in range(0, len(duz), 2)]
             cx, cz = merkez(pol)
             d = math.hypot(cx - rek_x, cz - rek_z)
             if d < en_d and poligon_alani(pol) > en_alan:
-                en_d, en_alan, en_yakin = d, poligon_alani(pol), pol
+                en_d, en_alan, en_yakin, en_id = d, poligon_alani(pol), pol, wid
         if en_yakin:
             arka_plan = [a for a in arka_plan
                          if not all(en_yakin[i] == [a[0][j], a[0][j + 1]]
@@ -239,7 +239,8 @@ def main():
             onemli.insert(0, {"isim": "Rektörlük", "taban": en_yakin,
                               "yukseklik": yukseklik_tahmin(en_yakin)[0],
                               "kat": yukseklik_tahmin(en_yakin)[1]})
-            print(f"  Rektörlük: en yakın OSM binası alındı ({en_d:.0f} m uzakta)")
+            print(f"  Rektörlük: OSM way {en_id} alındı "
+                  f"({en_alan:.0f} m², işaret noktasına {en_d:.0f} m)")
         else:
             onemli.insert(0, {
                 "isim": "Rektörlük (yer tutucu - düzenleme moduyla poligonu düzenle)",
@@ -312,7 +313,7 @@ def main():
     s.append("")
     s.append("// ===== ARKA PLAN BINALARI (kompakt: [duzpoligon, yukseklik]) =====")
     s.append("const ARKA_PLAN_BINALAR = [")
-    for duz, yuk in arka_plan:
+    for duz, yuk, _ in arka_plan:
         s.append(f"  [{json.dumps(duz)}, {yuk}],")
     s.append("];")
     s.append("")
