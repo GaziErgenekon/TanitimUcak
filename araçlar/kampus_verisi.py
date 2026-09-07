@@ -9,8 +9,9 @@ Kullanım:
 - ONEMLI_BINALAR   : isimli önemli binalar   (elle düzenlenebilir)
 - ARKA_PLAN_BINALAR: isimsiz binalar         (kompakt)
 - PARKLAR          : park/bahçe/çim alanları (elle düzenlenebilir)
-- YOLLAR           : yaya yolları/patika     (elle düzenlenebilir)
+- YOLLAR           : yollar (yaya/service/konut/ana) (elle düzenlenebilir)
 - FISKIYELER       : fıskiye/havuz noktaları (elle düzenlenebilir)
+- SPOR_ALANLARI    : futbol/tenis sahası, koşu pisti (elle düzenlenebilir)
 
 Ham OSM verisi araçlar/osm_onbellek.json'a kaydedilir; ağ hatasında önbellekten
 devam edilir. Koordinat sistemi: kampüs merkezi (0,0); x=doğu(+), z=güney(+), metre.
@@ -46,7 +47,8 @@ PALET = [0xd8c9a8, 0xcfc4b0, 0xb8a98c, 0xc9bdbd, 0xb5c2c9,
 # Bölge tanımı çevresinden çekilecek katman sorguları
 SORGULAR = {
     "binalar":  f'way(around:{YARICAP_M},{MERKEZ_LAT},{MERKEZ_LON})["building"];',
-    "yollar":   f'way(around:{YARICAP_M},{MERKEZ_LAT},{MERKEZ_LON})["highway"~"^(footway|path|pedestrian|service)$"];',
+    "yollar":   f'way(around:{YARICAP_M},{MERKEZ_LAT},{MERKEZ_LON})["highway"~"^(footway|path|pedestrian|service|residential|secondary|trunk|trunk_link|primary)$"];',
+    "spor":     f'way(around:{YARICAP_M},{MERKEZ_LAT},{MERKEZ_LON})["leisure"~"^(pitch|track|stadium)$"];',
     "parklar":  f'way(around:{YARICAP_M},{MERKEZ_LAT},{MERKEZ_LON})["leisure"~"^(park|garden)$"];'
                 f'way(around:{YARICAP_M},{MERKEZ_LAT},{MERKEZ_LON})["landuse"~"^(grass|meadow|recreation_ground)$"];',
     "fiskiyeler": f'node(around:{YARICAP_M},{MERKEZ_LAT},{MERKEZ_LON})["man_made"="fountain"];'
@@ -153,7 +155,15 @@ def main():
     d2 = Donusturucu(MERKEZ_LAT, MERKEZ_LON)
     dugumler = {e["id"]: (e["lat"], e["lon"]) for e in veri["elements"] if e["type"] == "node"}
 
-    onemli, arka_plan, parklar, yollar, fiskiyeler = [], [], [], [], []
+    # Yol tipine göre şerit genişliği (m) ve render tipi
+    YOL_GENISLIK = {"footway": 1.4, "path": 1.4, "pedestrian": 2.5, "service": 3.5,
+                    "residential": 4.5, "secondary": 6.0, "trunk": 8.0,
+                    "trunk_link": 5.0, "primary": 8.0}
+    YOL_TIP = {"footway": "footway", "path": "path", "pedestrian": "pedestrian",
+               "service": "service", "residential": "service",
+               "secondary": "ana", "trunk": "ana", "trunk_link": "ana", "primary": "ana"}
+
+    onemli, arka_plan, parklar, yollar, fiskiyeler, spor = [], [], [], [], [], []
     gorulen = set()
 
     for e in veri["elements"]:
@@ -192,13 +202,25 @@ def main():
                     duz.extend([x, z])
                 arka_plan.append([duz, yuk, e.get("id")])
 
-        elif tags.get("highway") in ("footway", "path", "pedestrian", "service"):
+        elif tags.get("highway") in YOL_GENISLIK:
             pol = rdp(coords, 0.8)
             if len(pol) >= 2:
                 duz = []
                 for x, z in pol:
                     duz.extend([x, z])
-                yollar.append([duz, 1.4, tags.get("highway")])
+                hw = tags.get("highway")
+                yollar.append([duz, YOL_GENISLIK[hw], YOL_TIP[hw]])
+
+        elif tags.get("leisure") in ("pitch", "track", "stadium"):
+            if not kapali or len(coords) < 3:
+                continue
+            pol = rdp(coords, 1.0)
+            if len(pol) < 3:
+                continue
+            spor.append({"isim": isim or {"pitch": "Saha", "track": "Koşu Pisti",
+                                          "stadium": "Stadyum"}[tags.get("leisure")],
+                         "spor": tags.get("sport", tags.get("leisure")),
+                         "taban": pol})
 
         elif tags.get("leisure") in ("park", "garden") or \
                 tags.get("landuse") in ("grass", "meadow", "recreation_ground"):
@@ -220,17 +242,20 @@ def main():
                                    "merkez": [round(cx, 1), round(cz, 1)],
                                    "yaricap": round(r, 1)})
 
-    # --- Rektörlük: gerçek konumu ile yer tutucu/otomatik polygon ---
+    # --- Rektörlük: kullanıcının işaret noktasına EN YAKIN bina (min 400 m²) ---
+    # OSM'de isimli değil; kullanıcı onaylı kural: fıskiye/park bitişiğindeki blok.
     rek_x, rek_z = d2.xy(REKTORLUK_LAT, REKTORLUK_LON)
     if not any("Rektörlük" in b["isim"] for b in onemli):
-        # Yakınlık 200 m içindeki en BÜYÜK arka plan binasını al (rektörlük adayı)
-        en_yakin, en_alan, en_d, en_id = None, 0.0, 200.0, None
+        en_yakin, en_alan, en_d, en_id = None, 0.0, 250.0, None
         for duz, _, wid in arka_plan:
             pol = [[duz[i], duz[i + 1]] for i in range(0, len(duz), 2)]
+            alan = poligon_alani(pol)
+            if alan < 400:
+                continue
             cx, cz = merkez(pol)
             d = math.hypot(cx - rek_x, cz - rek_z)
-            if d < en_d and poligon_alani(pol) > en_alan:
-                en_d, en_alan, en_yakin, en_id = d, poligon_alani(pol), pol, wid
+            if d < en_d:
+                en_d, en_alan, en_yakin, en_id = d, alan, pol, wid
         if en_yakin:
             arka_plan = [a for a in arka_plan
                          if not all(en_yakin[i] == [a[0][j], a[0][j + 1]]
@@ -311,6 +336,14 @@ def main():
     s.append('  { isim: "Rektörlük Fıskiyesi", merkez: [213, 401], yaricap: 3 },')
     s.append("];")
     s.append("")
+    s.append("// ===== SPOR ALANLARI (futbol/tenis pisti vb., elle duzenle) =====")
+    s.append("const SPOR_ALANLARI = [")
+    for a in sorted(spor, key=lambda a: -poligon_alani(a["taban"])):
+        taban_js = json.dumps([[x, z] for x, z in a["taban"]])
+        s.append(f"  {{ isim: {json.dumps(a['isim'], ensure_ascii=False)}, "
+                 f"spor: {json.dumps(a['spor'], ensure_ascii=False)}, taban: {taban_js} }},")
+    s.append("];")
+    s.append("")
     s.append("// ===== ARKA PLAN BINALARI (kompakt: [duzpoligon, yukseklik]) =====")
     s.append("const ARKA_PLAN_BINALAR = [")
     for duz, yuk, _ in arka_plan:
@@ -323,7 +356,8 @@ def main():
 
     boyut = os.path.getsize("binalar.js")
     print(f"binalar.js yazildi: {len(onemli)} onemli bina, {len(arka_plan)} arka plan, "
-          f"{len(parklar)} park, {len(yollar)} yol, {len(seen)} fiskiye — {boyut/1024:.0f} KB")
+          f"{len(parklar)} park, {len(yollar)} yol, {len(seen)} fiskiye, "
+          f"{len(spor)} spor — {boyut/1024:.0f} KB")
 
 if __name__ == "__main__":
     main()

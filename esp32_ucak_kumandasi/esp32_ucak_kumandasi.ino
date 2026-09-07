@@ -2,8 +2,8 @@
 // Kart: Lolin32 Lite | Sensör: MPU-6050 (I2C) | 1x buton
 //
 // BAĞLANTI:
-//   MPU-6050 VCC -> 3V3 | GND -> GND | SDA -> GPIO21 | SCL -> GPIO22
-//   Buton bir ucu -> GPIO13, diğer ucu -> GND (harici direnç YOK, dahili pull-up)
+//   MPU-6050 VCC -> 3V3 | GND -> GND | SDA -> GPIO25 | SCL -> GPIO26
+//   Buton bir ucu -> GPIO4, diğer ucu -> GND (harici direnç YOK, dahili pull-up)
 // SENSÖR YÖNÜ (önemli!):
 //   MPU-6050'nin X ekseni İLERİ (uçuş yönü), Z ekseni YUKARI bakmalı.
 //   Ters duruyorsa aşağıdaki TERS_PITCH / TERS_ROLL değerini -1 yap.
@@ -21,9 +21,9 @@
 #include <Adafruit_Sensor.h>
 
 // --- Pin ve ayarlar ---
-#define SDA_PIN     21
-#define SCL_PIN     22
-#define BUTON_PIN   13
+#define SDA_PIN     25
+#define SCL_PIN     26
+#define BUTON_PIN   4
 #define TERS_PITCH  1    // pitch tersse -1 yap
 #define TERS_ROLL   1    // roll tersse -1 yap
 #define TAMAMLAYICI 0.96 // complementary filtre katsayısı (gyro ağırlığı)

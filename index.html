@@ -65,6 +65,14 @@
 import * as THREE from 'three';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 
+// binalar.js eksik/eski sürümse boş liste kullan (çökme engelle)
+const ONEMLI_L = (typeof ONEMLI_BINALAR === 'undefined') ? [] : ONEMLI_BINALAR;
+const ARKA_L = (typeof ARKA_PLAN_BINALAR === 'undefined') ? [] : ARKA_PLAN_BINALAR;
+const PARK_L = (typeof PARKLAR === 'undefined') ? [] : PARKLAR;
+const YOL_L = (typeof YOLLAR === 'undefined') ? [] : YOLLAR;
+const FISK_L = (typeof FISKIYELER === 'undefined') ? [] : FISKIYELER;
+const SPOR_L = (typeof SPOR_ALANLARI === 'undefined') ? [] : SPOR_ALANLARI;
+
 // ===== AYARLAR ================================================================
 const HIZ_MS          = 25;      // uçağın sabit ileri hızı (m/s)
 const DONUS_KAZANCI   = 1.1;     // roll(°) başına dönüş hızı (°/s)
@@ -105,7 +113,7 @@ grid.material.opacity = 0.25; grid.material.transparent = true;
 sahne.add(grid);
 
 // ===== PARKLAR (düz poligonlar, yere koyulur) ================================
-for (const p of PARKLAR) {
+for (const p of PARK_L) {
   if (!p.taban || p.taban.length < 3) continue;
   const sekil = new THREE.Shape();
   sekil.moveTo(p.taban[0][0], -p.taban[0][1]);
@@ -142,7 +150,7 @@ for (const p of PARKLAR) {
       for (let k = 0; k < 6; k++) renkdizi.push(renk.r, renk.g, renk.b);
     }
   }
-  for (const [duz, genislik, tip] of YOLLAR) seritEkle(duz, genislik, tip);
+  for (const [duz, genislik, tip] of YOL_L) seritEkle(duz, genislik, tip);
   const g = new THREE.BufferGeometry();
   g.setAttribute('position', new THREE.Float32BufferAttribute(poz, 3));
   g.setAttribute('color', new THREE.Float32BufferAttribute(renkdizi, 3));
@@ -151,7 +159,7 @@ for (const p of PARKLAR) {
 }
 
 // ===== FISKIYELER (daire havuz + ortak sütun) ================================
-for (const f of FISKIYELER) {
+for (const f of FISK_L) {
   const havuz = new THREE.Mesh(
     new THREE.CircleGeometry(f.yaricap, 24),
     new THREE.MeshLambertMaterial({ color: 0x3f93c5 })
@@ -165,6 +173,24 @@ for (const f of FISKIYELER) {
   );
   sutun.position.set(f.merkez[0], (f.yaricap * 0.6) / 2 + 0.08, f.merkez[1]);
   sahne.add(sutun);
+}
+
+// ===== SPOR ALANLARI (futbol sahası yeşil, koşu pisti kırmızı) ================
+for (const a of SPOR_L) {
+  if (!a.taban || a.taban.length < 3) continue;
+  const sekil = new THREE.Shape();
+  sekil.moveTo(a.taban[0][0], -a.taban[0][1]);
+  for (let i = 1; i < a.taban.length; i++) sekil.lineTo(a.taban[i][0], -a.taban[i][1]);
+  sekil.closePath();
+  const g = new THREE.ShapeGeometry(sekil);
+  g.rotateX(-Math.PI / 2);
+  const spor = (a.spor || '').toLowerCase();
+  const renk = spor.includes('run') || spor.includes('track') ? 0x9e5b4a
+    : spor.includes('tennis') ? 0x5b8fa8
+    : spor.includes('basket') || spor.includes('volley') ? 0x8a7f5b : 0x4f9e4f;
+  const mesh = new THREE.Mesh(g, new THREE.MeshLambertMaterial({ color: renk }));
+  mesh.position.y = 0.06;
+  sahne.add(mesh);
 }
 
 // ===== BİNALAR ================================================================
@@ -205,7 +231,7 @@ function etiketSprite(metin) {
 // Arka plan: tek geometride birleştir (performans)
 {
   const geometrisiler = [];
-  for (const [duz, yukseklik] of ARKA_PLAN_BINALAR) {
+  for (const [duz, yukseklik] of ARKA_L) {
     const taban = [];
     for (let i = 0; i < duz.length; i += 2) taban.push([duz[i], duz[i + 1]]);
     if (taban.length >= 3) geometrisiler.push(binaGeometrisi(taban, yukseklik));
@@ -217,7 +243,7 @@ function etiketSprite(metin) {
 
 // Önemli binalar: ayrı malzeme (yan cephe + çatı) + etiket
 const onemliListesi = [];
-for (const b of ONEMLI_BINALAR) {
+for (const b of ONEMLI_L) {
   if (!b.taban || b.taban.length < 3) continue;
   const geometri = binaGeometrisi(b.taban, b.yukseklik);
   const yanMat = new THREE.MeshLambertMaterial({ color: b.renk ?? 0xcdbfa3 });

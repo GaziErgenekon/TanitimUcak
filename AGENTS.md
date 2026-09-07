@@ -13,12 +13,14 @@ Uzak repo: https://github.com/GaziErgenekon/TanitimUcak
   - `ONEMLI_BINALAR`: isimli binalar (taban [x,z], yükseklik, renk, catRengi, detay).
   - `ARKA_PLAN_BINALAR`: kompakt [duzpoligon, yukseklik] (OSM otomatik).
   - `PARKLAR`: {isim, tip, taban} düz yeşil poligonlar.
-  - `YOLLAR`: [duzluk, genislik(m), tip] — tip: ana/service/footway/path/pedestrian.
+  - `YOLLAR`: [duzluk, genislik(m), tip] — tip: ana/service/footway/path/pedestrian
+    (residential→service, secondary/trunk→ana olarak normalize edilir).
   - `FISKIYELER`: {isim, merkez, yaricap}.
+  - `SPOR_ALANLARI`: {isim, spor, taban} — futbol/tenis/basket sahaları, koşu pisti.
   - Üreten: `araçlar/kampus_verisi.py` (Overpass → önbellek → bu dosya).
 - `esp32_ucak_kumandasi/esp32_ucak_kumandasi.ino` — Lolin32 Lite firmware:
   MPU-6050 complementary filtre (pitch/roll, 50 Hz) + buton, CSV `pitch,roll,buton`.
-  Pinler: SDA=21, SCL=22, buton=13 (GND'ye, pull-up). Kütüphane: Adafruit MPU6050.
+  Pinler: SDA=25, SCL=26, buton=4 (GND'ye, pull-up). Kütüphane: Adafruit MPU6050.
   Eksen kuralı: X ileri, Z yukarı → pitch burun-yukarı +, roll sağa-yatış +.
   (pitch gyroY'nin NEGATİFİnden, roll gyroX'in POZİTİFİnden gelir — fizik gereği.)
 - `seri_kopru.py` — Firefox/Safari için seri→WebSocket köprüsü (`ws://localhost:8765`).
@@ -30,14 +32,17 @@ Uzak repo: https://github.com/GaziErgenekon/TanitimUcak
 ## Mimari Kararlar
 - **Koordinat:** kampüs merkezi (39.9435 N, 32.8205 E) = (0,0). x=doğu(+), z=güney(+),
   metre. Three.js'te -Z = kuzey/ileri.
-- **Rektörlük:** OSM'de isimli değil. Kullanıcının OSM linki (39.939483, 32.822092 →
-  yerel ~136,447) çevresindeki en büyük üniversite bloğu otomatik seçilir
-  (şu an OSM way 418594116, 69×64 m, merkez ~66,332). Şüpheliyse binalar.js'ten elle
+- **Rektörlük:** OSM'de isimli değil. Kullanıcı onaylı kural: fıskiye (213,401)
+  bitişiğindeki blok. Üretici, işaret noktasına (39.939483, 32.822092) en yakın
+  ≥400 m² binayı seçer (şu an OSM way 418594116 değil, **way 418645330**:
+  45×31 m, merkez ~177,530 — parkın güney bitişiği). Şüpheliyse binalar.js'ten elle
   düzelt (düzenleme modu + E tuşu ile konum bulunur).
 - **Bina geometrisi:** `THREE.Shape((x,-z))` → Extrude → `rotateX(-π/2)`. Yan+çatı için
   2 materyal grubu (0/1). Arka plan tek merge mesh. Yollar: genişlikli şerit (ribbon)
   tek mesh + vertex rengi (ana=asfalt, service=gri, yaya=açık). Parklar: ShapeGeometry
-  (y=0.05). Fıskiye: mavi daire + silindir sütun.
+  (y=0.05). Fıskiye: mavi daire + silindir sütun. Spor: futbol yeşil, pist kırmızı,
+  tenis mavi (y=0.06). Veri listeleri `typeof` korumasıyla okunur (eski binalar.js
+  ile çökmez).
 - **Veri kaynakları:** Web Serial (Chromium) veya WebSocket köprüsü. Ortak `satirIsle()`
   CSV parse; buton 1→0 düşen kenarda kamera değişir.
 - **İşleme:** EMA α=0.15 + ±2° deadband + "Sıfırla"/C kalibrasyonu. `YURUT_*` işaret sabitleri.
@@ -66,7 +71,8 @@ python3 -m http.server 8000
 ## Testler
 - `node --check` (index.html modülü + binalar.js).
 - Geometri testi /tmp/opencode/geo/test.mjs (three@0.160, npm --prefix ile kurulur):
-  extrude yönü, materyal grupları, merge, 35 önemli bina, Rektörlük konumu,
-  PARKLAR/YOLLAR/FISKIYELER geçerliliği, ±1300 m kapsam.
+  extrude yönü, materyal grupları, merge, 32 önemli bina, Rektörlük konumu
+  (fıskiye bitişiği), PARKLAR/YOLLAR/FISKIYELER/SPOR_ALANLARI geçerliliği,
+  futbol+koşu pisti varlığı, ±1300 m kapsam.
 - Köprü e2e: pty → seri_kopru.py → ws istemcisi (PYTHONPATH=/tmp/opencode/libs).
 - CDN jsdelivr three@0.160.0 erişilebilir.
