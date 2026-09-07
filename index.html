@@ -180,9 +180,10 @@ for (const p of PARK_L) {
       const dx = x2 - x1, dz = z2 - z1;
       const L = Math.hypot(dx, dz) || 1;
       const px = -dz / L * w, pz = dx / L * w;
-      // iki üçgen: sol1, sağ1, sol2 / sağ1, sağ2, sol2 (yukarı bakan)
-      poz.push(x1 + px, Y, z1 + pz, x1 - px, Y, z1 - pz, x2 + px, Y, z2 + pz,
-               x1 - px, Y, z1 - pz, x2 - px, Y, z2 - pz, x2 + px, Y, z2 + pz);
+      // iki üçgen: sol1, sol2, sağ1 / sağ1, sol2, sağ2 — normal +Y (yukarı),
+      // yoksa FrontSide malzemeyle üstten bakınca elenir (görünmez yol hatası)
+      poz.push(x1 + px, Y, z1 + pz, x2 + px, Y, z2 + pz, x1 - px, Y, z1 - pz,
+               x1 - px, Y, z1 - pz, x2 + px, Y, z2 + pz, x2 - px, Y, z2 - pz);
       for (let k = 0; k < 6; k++) renkdizi.push(renk.r, renk.g, renk.b);
     }
   }
