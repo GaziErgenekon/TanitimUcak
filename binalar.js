@@ -615,10 +615,6 @@ const YOLLAR = [
   [[796.2, 338.4, 802.6, 330.0], 3.5, "service"],
   [[-855.9, 258.6, -848.4, 280.5], 3.5, "service"],
   [[-102.9, 208.6, -148.4, 242.4], 4.5, "service"],
-  // A kapısı girişindeki ana yollar (ellem; istenen doğrultu/boyut elle ayarlanabilir):
-  [[77,545, -40,475, -220,395, -430,300], 4, "ana"],
-  [[77,545, 190,485, 420,420, 690,355], 4, "ana"],
-  [[77,545, 30,470, 75,395], 4, "ana"],
 ];
 
 // ===== FISKIYELER / NOKTA YAPILAR (merkez + yaricap) =====

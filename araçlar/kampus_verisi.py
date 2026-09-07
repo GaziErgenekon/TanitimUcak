@@ -317,11 +317,6 @@ def main():
     s.append("const YOLLAR = [")
     for duz, genislik, tip in sorted(yollar, key=lambda y: -len(y[0])):
         s.append(f"  [{json.dumps(duz)}, {genislik}, {json.dumps(tip)}],")
-    # Kullanıcının işaretlediği A-kapı ana yolları (OSM'de yoksa/elde eklendi; görüntüde ~x,z verir)
-    s.append("  // A kapısı girişindeki ana yollar (ellem; istenen doğrultu/boyut elle ayarlanabilir):")
-    s.append('  [[77,545, -40,475, -220,395, -430,300], 4, "ana"],')
-    s.append('  [[77,545, 190,485, 420,420, 690,355], 4, "ana"],')
-    s.append('  [[77,545, 30,470, 75,395], 4, "ana"],')
     s.append("];")
     s.append("")
     s.append("// ===== FISKIYELER / NOKTA YAPILAR (merkez + yaricap) =====")
