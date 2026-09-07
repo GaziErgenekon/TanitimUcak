@@ -44,7 +44,9 @@ Uzak repo: https://github.com/GaziErgenekon/TanitimUcak
   tenis mavi (y=0.06). Veri listeleri `typeof` korumasıyla okunur (eski binalar.js
   ile çökmez).
 - **Veri kaynakları:** Web Serial (Chromium) veya WebSocket köprüsü. Ortak `satirIsle()`
-  CSV parse; buton 1→0 düşen kenarda kamera değişir.
+  CSV parse; buton 1→0 düşen kenarında kamera değişir — web tarafında sönümleme var:
+  3 ardışık aynı örnek (~60ms) + 500ms refractory (`butonKenarIsle`, test.mjs'te
+  senaryolarla doğrulanır). Tek-seferlik klavye tuşlarında `e.repeat` yoksayılır.
 - **İşleme:** EMA α=0.15 + ±2° deadband + "Sıfırla"/C kalibrasyonu. `YURUT_*` işaret sabitleri.
 - **Uçuş:** 25 m/s sabit; roll→yaw (banklı dönüş), pitch→irtifa; min 0.8 m; ±1300 m sınır.
 - **Kameralar:** takip ↔ kokpit (buton/Enter) + **gezin modu** (G): WASD hareket,

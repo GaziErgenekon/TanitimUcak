@@ -336,17 +336,31 @@ let yaw = 0;
 let kameraModu = 'takip';                  // 'takip' | 'kokpit'
 
 // sensör ham + yumuşatılmış değerler
-const ham = { pitch: 0, roll: 0, buton: 1, oncekiButon: 1 };
+const ham = { pitch: 0, roll: 0, buton: 1 };
 const yumusak = { pitch: 0, roll: 0 };
 const ofset = { pitch: 0, roll: 0 };
 const sanal = { pitch: 0, roll: 0 };       // klavye simülasyonu değeri
 let klavyeModu = false;
 // --- GEZİN MODU (uçaktan bağımsız serbest kamera) ---
 let gezinModu = false;
-const gezin = { yaw: 0, pitch: -15, hiz: 25, forum: new THREE.Vector3(0, 40, 0) };
+const gezin = { yaw: 0, pitch: -15, hiz: 25, konum: new THREE.Vector3(0, 40, 0) };
 const GEZIN_HIZ_ADIMI = 5, GEZIN_MIN_HIZ = 1, GEZIN_MAX_HIZ = 300;
 
 // ===== VERİ KAYNAKLARI ========================================================
+// --BUTON-KENAR-BASLA-- (test/geometri test.mjs bu bloğu okuyup çalıştırır; imzayı bozma)
+let butonKararli = 1, butonArdarda = 0, sonToggleMs = -1e9;
+function butonKenarIsle(hamButon, msSimdi) {
+  // Donanım sönümlemesi: 3 ardışık aynı örnek (~60ms @50Hz) gerekli,
+  // ardından 500ms refractory (çift-toggle engelle). true = geçerli basış.
+  if (hamButon === butonKararli) { butonArdarda = 0; return false; }
+  butonArdarda++;
+  if (butonArdarda < 3) return false;
+  const dustu = (butonKararli === 1 && hamButon === 0);
+  butonKararli = hamButon; butonArdarda = 0;
+  if (dustu && msSimdi - sonToggleMs > 500) { sonToggleMs = msSimdi; return true; }
+  return false;
+}
+// --BUTON-KENAR-BIT--
 function satirIsle(satir) {
   const p = satir.split(',');
   if (p.length < 3) return;
@@ -354,9 +368,8 @@ function satirIsle(satir) {
   const roll = parseFloat(p[1]);
   const buton = parseInt(p[2]);
   if (isNaN(pitch) || isNaN(roll) || isNaN(buton)) return;
-  // buton 1 -> 0 düşen kenar: kamera değiştir
-  if (ham.oncekiButon === 1 && buton === 0) kameraTogglesi();
-  ham.oncekiButon = ham.buton;
+  // buton 1 -> 0 düşen kenar (sönümlü): kamera değiştir
+  if (butonKenarIsle(buton, performance.now())) kameraTogglesi();
   ham.buton = buton;
   ham.pitch = pitch * YURUT_PITCH;
   ham.roll = roll * YURUT_ROLL;
@@ -430,7 +443,7 @@ function wsBaglan() {
 function kesSenk() {
   if (kesici) { try { kesici(); } catch {} kesici = null; }
   aktifKaynak = null;
-  ham.buton = 1; ham.oncekiButon = 1;
+  ham.buton = 1; butonKararli = 1; butonArdarda = 0;
 }
 async function kes() { kesSenk(); }
 
@@ -462,6 +475,9 @@ function sifirla() {
 const tuslar = {};
 addEventListener('keydown', (e) => {
   tuslar[e.key] = true;
+  // Tek-seferlik tuşlarda basılı-tutma tekrarını yoksay (çift-toggle engelle);
+  // ok tuşları/WASD bilinçli olarak tekrar alır (sürekli hareket için tuslar[] kullanılır).
+  if (e.repeat) return;
   if (e.key === 'c' || e.key === 'C') sifirla();
   if (e.key === 'e' || e.key === 'E') duzenleYakala();
   if (e.key === 'g' || e.key === 'G') gezinToggle();
