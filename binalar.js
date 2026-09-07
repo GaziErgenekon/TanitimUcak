@@ -1,6 +1,12 @@
 // ** BU DOSYA araclar/kampus_verisi.py ILE OTOMATIK URETILMISTIR **
 // Listeleri ELLE DUZENLEMEK icin serbestsiniz; tarayicida F5 yeterli.
 // Koordinat: kampus merkezi (0,0); x = dogu (+), z = guney (+), birim: metre.
+// Pencereler (sadece ONEMLI_BINALAR'da, opsiyonel):
+//   pencere: false                  → bu binada pencere yok
+//   pencere: { yogunluk: 0.8 }      → pencerelerin %80'i çizilir (0-1)
+//   pencere: { renk: 0x7fb6cc }      → cam rengi (varsayılan açık mavi)
+//   pencere: { isikOran: 0.4 }       → yanan (sarı) cam oranı (varsayılan 0.25)
+//   (hiç yazılmazsa varsayılan: yogunluk 0.75, açık mavi cam, %25 yanık)
 
 // ===== ONEMLI BINALAR (isimli, elle duzenle) =====
 const ONEMLI_BINALAR = [
@@ -130,6 +136,7 @@ const ONEMLI_BINALAR = [
     yukseklik: 24,
     renk: 0xd0b49a,
     catRengi: 0x6e6e6e,
+    pencere: { yogunluk: 0.8 },
     detay: { katsayisi: 4 }
   },
   {
