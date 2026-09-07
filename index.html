@@ -17,6 +17,8 @@
   button.ikincil { background: #37414f; }
   button.ikincil:hover { background: #465364; }
   button.tehlike { background: #b3372e; }
+  button.aktif { background: #15803d; }
+  button.aktif:hover { background: #166534; }
   label.cek { font-size: 12px; display: flex; align-items: center; gap: 5px; }
   #durum { left: 10px; bottom: 10px; background: rgba(16,20,26,.82); border: 1px solid #2a3442;
            border-radius: 8px; padding: 7px 12px; font-size: 12.5px; white-space: nowrap; }
@@ -485,6 +487,7 @@ function satirIsle(satir) {
   const roll = parseFloat(p[1]);
   const buton = parseInt(p[2]);
   if (isNaN(pitch) || isNaN(roll) || isNaN(buton)) return;
+  veriKaydet(satir);
   // buton 1 -> 0 düşen kenar (sönümlü): kamera değiştir
   if (butonKenarIsle(buton, performance.now())) kameraTogglesi();
   ham.buton = buton;
@@ -495,14 +498,40 @@ function satirIsle(satir) {
 let aktifKaynak = null;         // 'seri' | 'ws'
 let kesici = null;              // bağlantıyı kapatma fonksiyonu
 
+// --- veri akış debug istatistikleri ---
+let sonVeriMs = 0, sonSatir = '—';
+let oranPencere = [];           // son 2 sn içindeki satır zamanları (ms)
+function veriKaydet(satir) {
+  const simdi = performance.now();
+  sonVeriMs = simdi; sonSatir = satir;
+  oranPencere.push(simdi);
+}
+function veriOrani() {
+  const simdi = performance.now();
+  oranPencere = oranPencere.filter(t => simdi - t < 2000);
+  return (oranPencere.length / 2).toFixed(0);
+}
+
+// --- kaynak seçimi + buton renkleri ---
+const btnSeriEl = document.getElementById('btnSeri');
+const btnWsEl = document.getElementById('btnWs');
+function kaynakGoster() {
+  btnSeriEl.classList.toggle('aktif', aktifKaynak === 'seri');
+  btnWsEl.classList.toggle('aktif', aktifKaynak === 'ws');
+}
+function kaynakAyarla(k) { aktifKaynak = k; kaynakGoster(); }
+
 const d0 = document.getElementById('durum');
 function durumGuncelle(ek) {
   const kn = kameraModu === 'takip' ? 'TAKİP (3. şahıs)' : 'KOKPİT (1. şahıs)';
   const knAdi = aktifKaynak ? (aktifKaynak === 'seri' ? 'Seri Port' : 'WebSocket') : '—';
+  const veriBilgi = aktifKaynak
+    ? ` | <b>Veri:</b> ${veriOrani()} satır/s • son ${Math.max(0, performance.now() - sonVeriMs).toFixed(0)}ms önce • son: ${sonSatir}`
+    : ` | <b>Veri:</b> yok`;
   d0.innerHTML =
     `<b>Kaynak:</b> ${knAdi} | <b>Pitch:</b> ${ham.pitch.toFixed(1)}° | ` +
     `<b>Roll:</b> ${ham.roll.toFixed(1)}° | <b>İrtifa:</b> ${konum.y.toFixed(0)} m | ` +
-    `<b>Hız:</b> ${HIZ_MS} m/s | <b>Kamera:</b> ${kn}` + (ek ? ` | ${ek}` : '');
+    `<b>Hız:</b> ${HIZ_MS} m/s | <b>Kamera:</b> ${kn}${veriBilgi}` + (ek ? ` | ${ek}` : '');
 }
 
 // --- Web Serial (Chrome/Edge) ---
@@ -515,7 +544,7 @@ async function seriBaglan() {
   try {
     const port = await navigator.serial.requestPort();
     await port.open({ baudRate: 115200 });
-    aktifKaynak = 'seri';
+    kaynakAyarla('seri');
     const decoder = new TextDecoderStream();
     const okumaBitti = port.readable.pipeTo(decoder.writable).catch(() => {});
     const okuyucu = decoder.readable.getReader();
@@ -535,38 +564,42 @@ async function seriBaglan() {
         if (satir) satirIsle(satir);
       }
     }
-    aktifKaynak = null;
+    kaynakAyarla(null);
   } catch (e) {
     console.warn('Seri bağlantı hatası:', e);
-    aktifKaynak = null;
+    kaynakAyarla(null);
   }
 }
 
 // --- WebSocket (Firefox/Safari, seri_kopru.py ile) ---
-function wsBaglan() {
+// sessiz=true: açılıştaki otomatik denemede hata penceresi gösterme
+function wsBaglan(sessiz = false) {
   kesSenk();
   try {
     const ws = new WebSocket('ws://localhost:8765');
-    ws.onopen = () => { aktifKaynak = 'ws'; };
-    ws.onclose = () => { if (aktifKaynak === 'ws') aktifKaynak = null; };
+    ws.onopen = () => { kaynakAyarla('ws'); };
+    ws.onclose = () => { if (aktifKaynak === 'ws') kaynakAyarla(null); };
     ws.onmessage = (ol) => {
       for (const satir of ol.data.split('\n')) if (satir.trim()) satirIsle(satir.trim());
     };
-    ws.onerror = () => alert('WebSocket bağlantısı kurulamadı.\nTerminalde "python3 seri_kopru.py" çalıştırıyor musunuz?');
+    ws.onerror = () => {
+      if (!sessiz) alert('WebSocket bağlantısı kurulamadı.\nTerminalde "python3 seri_kopru.py" çalıştırıyor musunuz?');
+    };
     kesici = () => ws.close();
   } catch (e) { console.warn(e); }
 }
 
 function kesSenk() {
   if (kesici) { try { kesici(); } catch {} kesici = null; }
-  aktifKaynak = null;
+  kaynakAyarla(null);
+  oranPencere = [];
   ham.buton = 1; butonKararli = 1; butonArdarda = 0;
 }
 async function kes() { kesSenk(); }
 
 // ===== HUD BUTONLARI ==========================================================
 document.getElementById('btnSeri').onclick = seriBaglan;
-document.getElementById('btnWs').onclick = wsBaglan;
+document.getElementById('btnWs').onclick = () => wsBaglan(false);
 document.getElementById('btnKes').onclick = kes;
 document.getElementById('btnSifirla').onclick = sifirla;
 document.getElementById('btnDuzenle').onclick = duzenleYakala;
@@ -737,8 +770,14 @@ function dongu() {
     const burun = konum.clone().addScaledVector(ileri, 2.2);
     burun.y += 0.9;
     kamera.position.copy(burun);
-    const bakis = konum.clone().addScaledVector(ileri, 60);
-    kamera.lookAt(bakis);
+    // Kokpit bakışı pitch'i kısmen takip eder (0.7): yukarı/aşağı bakınca
+    // ufuk da o yöne kayar. 1.0 = birebir, 0 = eski düz bakış.
+    const bakisPitch = THREE.MathUtils.degToRad(pitchEtkili * 0.7);
+    const bakisYonu = new THREE.Vector3(
+      -Math.sin(yaw) * Math.cos(bakisPitch),
+      Math.sin(bakisPitch),
+      -Math.cos(yaw) * Math.cos(bakisPitch));
+    kamera.lookAt(konum.clone().addScaledVector(bakisYonu, 60));
   }
 
   durumGuncelle();
@@ -751,6 +790,10 @@ addEventListener('resize', () => {
   kamera.updateProjectionMatrix();
   renderer.setSize(innerWidth, innerHeight);
 });
+
+// Açılışta otomatik seçim: köprü çalışıyorsa WebSocket'e sessizce bağlan,
+// yoksa bağlantısız başla (Web Serial tarayıcı güvenliği gereği hep elle bağlanır).
+wsBaglan(true);
 </script>
 </body>
 </html>
