@@ -213,21 +213,47 @@ for (const p of PARK_L) {
   katman.yol.add(yolMesh);
 }
 
-// ===== FISKIYELER (daire havuz + ortak sütun) ================================
+// ===== FISKIYELER (kare veya daire havuz + sütun) ============================
 for (const f of FISK_L) {
+  const [fx, fz] = f.merkez;
+  if (f.sekil === 'kare') {
+    // Kare havuz: taş bordür + su yüzeyi + ortada küçük sütun
+    const kenar = f.boyut || 8;
+    const bordur = new THREE.Mesh(
+      new THREE.BoxGeometry(kenar, 0.6, kenar),
+      new THREE.MeshLambertMaterial({ color: 0xcfc9bd })
+    );
+    bordur.position.set(fx, 0.3, fz);
+    katman.fiskiiye.add(bordur);
+    const su = new THREE.Mesh(
+      new THREE.PlaneGeometry(kenar - 1, kenar - 1),
+      zeminMalzeme(0x3f93c5, -4)
+    );
+    su.rotation.x = -Math.PI / 2;
+    su.position.set(fx, 0.62, fz);
+    su.renderOrder = 4;
+    katman.fiskiiye.add(su);
+    const sutun = new THREE.Mesh(
+      new THREE.BoxGeometry(1.2, 2.2, 1.2),
+      new THREE.MeshLambertMaterial({ color: 0xd9d9d9 })
+    );
+    sutun.position.set(fx, 1.1, fz);
+    katman.fiskiiye.add(sutun);
+    continue;
+  }
   const havuz = new THREE.Mesh(
     new THREE.CircleGeometry(f.yaricap, 24),
     zeminMalzeme(0x3f93c5, -4)
   );
   havuz.rotation.x = -Math.PI / 2;
-  havuz.position.set(f.merkez[0], 0.08, f.merkez[1]);
+  havuz.position.set(fx, 0.08, fz);
   havuz.renderOrder = 4;
   katman.fiskiiye.add(havuz);
   const sutun = new THREE.Mesh(
     new THREE.CylinderGeometry(0.4, 0.6, f.yaricap * 0.6, 10),
     new THREE.MeshLambertMaterial({ color: 0xd9d9d9 })
   );
-  sutun.position.set(f.merkez[0], (f.yaricap * 0.6) / 2 + 0.08, f.merkez[1]);
+  sutun.position.set(fx, (f.yaricap * 0.6) / 2 + 0.08, fz);
   katman.fiskiiye.add(sutun);
 }
 
