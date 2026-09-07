@@ -38,7 +38,7 @@ REKTORLUK_LAT, REKTORLUK_LON = 39.939483, 32.822092
 # (136,447) taşınmış hali. Otomatik seçim KAPALI — bu poligon korunur.
 # Değiştirmek için bu listeyi düzenle.
 SABIT_REKTORLUK_TABAN = [[141.3, 428.8], [139.2, 425.9], [143.3, 422.9], [149.6, 431.5], [152.2, 429.6], [145.9, 421.0], [150.8, 417.4], [160.3, 430.4], [152.8, 435.9], [154.7, 438.5], [162.3, 432.9], [172.3, 446.7], [160.6, 455.3], [151.9, 443.4], [142.3, 450.4], [147.6, 457.7], [142.6, 461.4], [137.3, 454.1], [127.7, 461.1], [136.4, 473.0], [124.7, 481.6], [114.6, 467.8], [122.2, 462.2], [120.3, 459.6], [112.7, 465.2], [103.2, 452.2], [108.1, 448.6], [114.4, 457.2], [117.1, 455.3], [110.8, 446.6], [114.9, 443.6], [117.1, 446.6]]
-SABIT_REKTORLUK_YUKSEKLIK = 12
+SABIT_REKTORLUK_YUKSEKLIK = 24  # 4 kat × 3 m × 2 ölçek
 SABIT_REKTORLUK_KAT = 4
 
 ENDPOINTLER = [
@@ -152,8 +152,10 @@ def merkez(p):
     return (sum(x for x, _ in p) / len(p), sum(z for _, z in p) / len(p))
 
 def yukseklik_tahmin(p):
-    kat = max(2, min(8, round(math.sqrt(poligon_alani(p)) / 6.0)))
-    return kat * 3, kat
+    # Kullanıcı kararı: kat aralığı daraltıldı (2-3), görsel ölçek ×2 (kat*3m*2).
+    # Rektörlük (4 kat) artık cüce kalmaz, kampüs silüeti heybetli durur.
+    kat = max(2, min(3, round(math.sqrt(poligon_alani(p)) / 6.0)))
+    return kat * 6, kat
 
 # --- Ana işlem ------------------------------------------------------------------
 def main():
