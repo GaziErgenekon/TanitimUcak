@@ -372,21 +372,39 @@ function pencereDokusu(ayar, tohum) {
   return doku;
 }
 
-// Arka plan: tek geometride birleştir (performans)
+// Arka plan: duvarlar ve çatılar AYRI mesh'lerde birleştirilir.
+// Neden ayrı? mergeGeometries grupları düşürür; malzeme dizisi [yan, çatı]
+// grupsuz geometride HİÇ çizilmez (render listesine girmez). Tek malzemeli
+// iki mesh'te bu sorun yoktur. Çatıya pencere düşmez.
 {
-  const geometrisiler = [];
+// --DILIMLE-BASLA-- (test/geometri test.mjs bu bloğu okuyup çalıştırır; imzayı bozma)
+function dilimle(geometri, malzemeNo) {
+  // ExtrudeGeometry: grup 0 = yan duvar, grup 1 = kapak (non-indexed, ardışık aralık)
+  const grup = geometri.groups.find(g => g.materialIndex === malzemeNo);
+  const cikti = new THREE.BufferGeometry();
+  for (const ad of ['position', 'normal', 'uv']) {
+    const kaynak = geometri.attributes[ad];
+    const bas = grup.start * kaynak.itemSize, son = (grup.start + grup.count) * kaynak.itemSize;
+    cikti.setAttribute(ad, new THREE.BufferAttribute(kaynak.array.slice(bas, son), kaynak.itemSize));
+  }
+  return cikti;
+}
+// --DILIMLE-BIT--
+  const duvarlar = [], catilar = [];
   for (const [duz, yukseklik] of ARKA_L) {
     const taban = [];
     for (let i = 0; i < duz.length; i += 2) taban.push([duz[i], duz[i + 1]]);
-    if (taban.length >= 3) geometrisiler.push(binaGeometrisi(taban, yukseklik));
+    if (taban.length < 3) continue;
+    const g = binaGeometrisi(taban, yukseklik);
+    duvarlar.push(dilimle(g, 0));
+    catilar.push(dilimle(g, 1));
   }
-  const birlesik = mergeGeometries(geometrisiler, false);
-  // Grup 0 = yan duvar (pencereli), grup 1 = çatı (düz). Çatıya pencere düşmez.
-  const arkaYan = new THREE.MeshLambertMaterial({
-    color: 0x99a1a6, map: pencereDokusu(pencereAyar(null), 7),
-  });
-  const arkaCat = new THREE.MeshLambertMaterial({ color: 0x7e858a });
-  katman.arka.add(new THREE.Mesh(birlesik, [arkaYan, arkaCat]));
+  katman.arka.add(new THREE.Mesh(
+    mergeGeometries(duvarlar, false),
+    new THREE.MeshLambertMaterial({ color: 0x99a1a6, map: pencereDokusu(pencereAyar(null), 7) })));
+  katman.arka.add(new THREE.Mesh(
+    mergeGeometries(catilar, false),
+    new THREE.MeshLambertMaterial({ color: 0x7e858a })));
 }
 
 // Önemli binalar: ayrı malzeme (yan cephe + çatı) + etiket
