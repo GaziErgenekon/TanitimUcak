@@ -41,7 +41,8 @@ Uzak repo: https://github.com/GaziErgenekon/TanitimUcak
   45×31 m, merkez ~177,530 — parkın güney bitişiği). Şüpheliyse binalar.js'ten elle
   düzelt (düzenleme modu + E tuşu ile konum bulunur).
 - **Bina geometrisi:** `THREE.Shape((x,-z))` → Extrude → `rotateX(-π/2)`. Yan+çatı için
-  2 materyal grubu (0/1). Duvarlarda prosedürel pencere dokusu (3m karo, tekrarlı UV;
+  2 materyal grubu (0/1). Duvarlarda prosedürel pencere dokusu (3×6m karo, 2×2 küçük
+  pencere, tekrarlı UV;
   arka plan tek doku, önemlilerde bina başına + `pencere` alanından ayarlanır).
   Arka plan tek merge mesh. Yollar: genişlikli şerit (ribbon)
   tek mesh + vertex rengi (ana=asfalt, service=gri, yaya=açık). Parklar: ShapeGeometry
