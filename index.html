@@ -23,8 +23,18 @@
   #durum { left: 10px; bottom: 10px; background: rgba(16,20,26,.82); border: 1px solid #2a3442;
            border-radius: 8px; padding: 7px 12px; font-size: 12.5px; white-space: nowrap; }
   #durum b { color: #7cc4ff; }
-  #duzenle { top: 10px; right: 10px; background: rgba(16,20,26,.88); border: 1px solid #2a3442;
+  #duzenle { top: 52px; right: 10px; background: rgba(16,20,26,.88); border: 1px solid #2a3442;
              border-radius: 10px; padding: 10px; width: 300px; display: none; flex-direction: column; gap: 6px; }
+  #btnAyarlar { top: 10px; right: 10px; }
+  #ayarlar { top: 52px; right: 10px; width: 300px; max-height: calc(100vh - 66px); overflow: auto;
+             background: rgba(16,20,26,.92); border: 1px solid #2a3442; border-radius: 10px;
+             padding: 10px 12px; display: none; flex-direction: column; gap: 8px; }
+  #ayarlar .baslik { font-size: 13px; color: #7cc4ff; }
+  #ayarlar .bolum { border-top: 1px solid #2a3442; padding-top: 7px; margin-top: 1px;
+                    display: flex; flex-direction: column; gap: 5px; }
+  #ayarlar .bolum > .etiket { font-size: 10.5px; color: #8fa3b8; text-transform: uppercase;
+                              letter-spacing: .05em; }
+  #ayarlar .satir { display: flex; gap: 6px; flex-wrap: wrap; }
   #duzenle textarea { width: 100%; height: 120px; background: #0a0d12; color: #9fe6a0;
                       border: 1px solid #2a3442; border-radius: 6px; font: 11px monospace; }
   #duzenle input[type=number], #duzenle input[type=text] {
@@ -60,11 +70,49 @@
     <button id="btnWs" class="ikincil">WebSocket ile Bağlan</button>
     <button id="btnKes" class="tehlike">Bağlantıyı Kes</button>
   </div>
-  <div class="satir">
-    <button id="btnSifirla" class="ikincil">Sıfırla (C)</button>
-    <button id="btnDuzenle" class="ikincil">Düzenleme Modu (E)</button>
-    <button id="btnGezin" class="ikincil">Gezin Modu (G)</button>
-    <label class="cek"><input type="checkbox" id="chkKlavye"> Klavye Simülasyonu (ok tuşları, WASD gezin, Enter=kamera, +/- hız, Q/Z irtifa)</label>
+</div>
+
+<button id="btnAyarlar" class="hud ikincil">Ayarlar (H)</button>
+<div id="ayarlar" class="hud">
+  <div class="baslik">Ayarlar</div>
+  <div class="bolum">
+    <div class="etiket">Çarpışma</div>
+    <label class="cek"><input type="checkbox" id="chkCarpisma" checked> Binalara çarpma</label>
+    <label class="cek"><input type="checkbox" id="chkAgacCarpisma" checked> Ağaçlara çarpma</label>
+  </div>
+  <div class="bolum">
+    <div class="etiket">Kamera</div>
+    <div class="satir">
+      <button id="btnTakip" class="ikincil aktif">Takip</button>
+      <button id="btnKokpit" class="ikincil">Kokpit</button>
+    </div>
+  </div>
+  <div class="bolum">
+    <div class="etiket">Simülasyon</div>
+    <label class="cek"><input type="checkbox" id="chkKlavye"> Klavye simülasyonu (ok tuşları, WASD gezin, Enter=kamera)</label>
+    <div class="satir">
+      <button id="btnSifirla" class="ikincil">Sıfırla (C)</button>
+      <button id="btnGezin" class="ikincil">Gezin Modu (G)</button>
+      <button id="btnDuzenle" class="ikincil">Düzenleme (E)</button>
+    </div>
+  </div>
+  <div class="bolum">
+    <div class="etiket">Katmanlar</div>
+    <label class="cek"><input type="checkbox" data-katman="bina" checked> Önemli binalar</label>
+    <label class="cek"><input type="checkbox" data-katman="etiket" checked> Etiketler</label>
+    <label class="cek"><input type="checkbox" data-katman="arka" checked> Arka plan</label>
+    <label class="cek"><input type="checkbox" data-katman="yol" checked> Yollar</label>
+    <label class="cek"><input type="checkbox" data-katman="park" checked> Parklar</label>
+    <label class="cek"><input type="checkbox" data-katman="spor" checked> Spor alanları</label>
+    <label class="cek"><input type="checkbox" data-katman="fiskiye" checked> Fıskiyeler</label>
+    <label class="cek"><input type="checkbox" data-katman="agac" checked> Ağaçlar</label>
+    <label class="cek"><input type="checkbox" data-katman="poi" checked> İşletmeler/Duraklar</label>
+    <label class="cek"><input type="checkbox" data-katman="otopark" checked> Otoparklar</label>
+    <label class="cek"><input type="checkbox" data-katman="ray" checked> Raylı sistem</label>
+    <label class="cek"><input type="checkbox" data-katman="giris" checked> Girişler/Bayraklar</label>
+  </div>
+  <div class="bolum">
+    <button id="btnAyarlarKapat" class="tehlike">Kapat (H)</button>
   </div>
 </div>
 
@@ -99,22 +147,6 @@
 </div>
 
 <div id="durum" class="hud">Bağlantı bekleniyor…</div>
-
-<div id="katmanlar" class="hud">
-  <div class="baslik">Katmanlar</div>
-  <label class="cek"><input type="checkbox" data-katman="bina" checked> Önemli binalar</label>
-  <label class="cek"><input type="checkbox" data-katman="etiket" checked> Etiketler</label>
-  <label class="cek"><input type="checkbox" data-katman="arka" checked> Arka plan</label>
-  <label class="cek"><input type="checkbox" data-katman="yol" checked> Yollar</label>
-  <label class="cek"><input type="checkbox" data-katman="park" checked> Parklar</label>
-  <label class="cek"><input type="checkbox" data-katman="spor" checked> Spor alanları</label>
-  <label class="cek"><input type="checkbox" data-katman="fiskiye" checked> Fıskiyeler</label>
-  <label class="cek"><input type="checkbox" data-katman="agac" checked> Ağaçlar</label>
-  <label class="cek"><input type="checkbox" data-katman="poi" checked> İşletmeler/Duraklar</label>
-  <label class="cek"><input type="checkbox" data-katman="otopark" checked> Otoparklar</label>
-  <label class="cek"><input type="checkbox" data-katman="ray" checked> Raylı sistem</label>
-  <label class="cek"><input type="checkbox" data-katman="giris" checked> Girişler/Bayraklar</label>
-</div>
 
 <script src="binalar.js"></script>
 <script src="cevre.js"></script>
@@ -184,7 +216,7 @@ for (const ad of ['bina', 'etiket', 'arka', 'yol', 'park', 'spor', 'fiskiye',
   katman[ad] = new THREE.Group();
   sahne.add(katman[ad]);
 }
-document.querySelectorAll('#katmanlar input[data-katman]').forEach((kutucuk) => {
+document.querySelectorAll('#ayarlar input[data-katman]').forEach((kutucuk) => {
   kutucuk.onchange = () => { katman[kutucuk.dataset.katman].visible = kutucuk.checked; };
 });
 
@@ -1402,6 +1434,30 @@ document.getElementById('btnDuzenle').onclick = () => duzenleToggle();
 document.getElementById('btnGezin').onclick = () => gezinToggle();
 document.getElementById('chkKlavye').onchange = (e) => { klavyeModu = e.target.checked; };
 
+// --- Ayarlar drawer'ı ---
+const ayarlarPanel = document.getElementById('ayarlar');
+const btnAyarlarEl = document.getElementById('btnAyarlar');
+function ayarlarToggle(zorla) {
+  const acik = (zorla === undefined) ? ayarlarPanel.style.display !== 'flex' : !!zorla;
+  ayarlarPanel.style.display = acik ? 'flex' : 'none';
+  btnAyarlarEl.classList.toggle('aktif', acik);
+  if (acik && duzenleModu) duzenleToggle(false);
+}
+document.getElementById('btnAyarlar').onclick = () => ayarlarToggle();
+document.getElementById('btnAyarlarKapat').onclick = () => ayarlarToggle(false);
+// Kamera seçimi (Enter ile de değişir; buton durumu senkron kalır)
+const btnTakipEl = document.getElementById('btnTakip');
+const btnKokpitEl = document.getElementById('btnKokpit');
+function kameraGoster() {
+  btnTakipEl.classList.toggle('aktif', kameraModu === 'takip');
+  btnKokpitEl.classList.toggle('aktif', kameraModu === 'kokpit');
+}
+btnTakipEl.onclick = () => { kameraModu = 'takip'; kameraGoster(); };
+btnKokpitEl.onclick = () => { kameraModu = 'kokpit'; kameraGoster(); };
+// Çarpışma anahtarları
+document.getElementById('chkCarpisma').onchange = (e) => { carpismaAcik = e.target.checked; };
+document.getElementById('chkAgacCarpisma').onchange = (e) => { agacCarpisma = e.target.checked; };
+
 function gezinToggle() {
   gezinModu = !gezinModu;
   if (gezinModu) {
@@ -1427,6 +1483,8 @@ addEventListener('keydown', (e) => {
   if (e.key === 'c' || e.key === 'C') sifirla();
   if (e.key === 'e' || e.key === 'E') duzenleToggle();
   if (e.key === 'g' || e.key === 'G') gezinToggle();
+  if (e.key === 'h' || e.key === 'H') ayarlarToggle();
+  if (e.key === 'Escape') ayarlarToggle(false);
   if (e.key === '+' || e.key === '=') gezin.hiz = Math.min(gezin.hiz ? GEZIN_MAX_HIZ : GEZIN_MAX_HIZ, gezin.hiz + GEZIN_HIZ_ADIMI);
   if (e.key === '-' || e.key === '_') gezin.hiz = Math.max(GEZIN_MIN_HIZ, gezin.hiz - GEZIN_HIZ_ADIMI);
   if (e.key === 'Enter') kameraTogglesi();
@@ -1435,6 +1493,7 @@ addEventListener('keyup', (e) => { tuslar[e.key] = false; });
 
 function kameraTogglesi() {
   kameraModu = (kameraModu === 'takip') ? 'kokpit' : 'takip';
+  kameraGoster();
 }
 
 // ===== DÜZENLEME MODU 2.0 =====================================================
@@ -1661,7 +1720,12 @@ function duzenleToggle(zorla) {
   duzenlePanel.style.display = duzenleModu ? 'flex' : 'none';
   btnDuzenleEl.classList.toggle('aktif', duzenleModu);
   if (!duzenleModu) secimTemizle();
-  else { panelDoldur(); handleGrubu.visible = !!secim.entry; secimKutu.visible = !!secim.entry; }
+  else {
+    ayarlarToggle(false);   // iki panel üst üste binmesin
+    panelDoldur();
+    handleGrubu.visible = !!secim.entry;
+    secimKutu.visible = !!secim.entry;
+  }
 }
 
 // ===== OYNATIM DÖNGÜSÜ ========================================================
