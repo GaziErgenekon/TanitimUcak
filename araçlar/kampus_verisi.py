@@ -316,7 +316,8 @@ def yukseklik_belirle(p, tags):
 def elle_veriyi_yukle():
     """Elle düzenlemelerin tek kaynağı; üretim bunları korur. Eksik dosya hata değil."""
     bos = {"binalar": [], "sil": [], "sira": [], "renkler": {}, "pencereler": {},
-           "parklar": [], "fiskiyeler": [], "yollar": [], "poiler": [], "agaclar": []}
+           "parklar": [], "fiskiyeler": [], "yollar": [], "poiler": [], "agaclar": [],
+           "girisler": [], "bayraklar": []}
     if not os.path.exists(ELLE_VERI):
         print(f"  UYARI: {ELLE_VERI} yok; elle düzenlemeler uygulanmayacak.")
         return bos
@@ -776,13 +777,32 @@ def main():
         c.append(f"  [{json.dumps(duz)}, {json.dumps(tip, ensure_ascii=False)}],")
     c.append("];")
     c.append("")
+    c.append("// Kampüs giriş kapıları: { isim, merkez:[x,z], aci (derece), pano }")
+    c.append("const GIRISLER = [")
+    for g in elle["girisler"]:
+        if not g.get("merkez"):
+            continue
+        kayit = {k: v for k, v in g.items() if not k.startswith("_")}
+        c.append("  " + json.dumps(kayit, ensure_ascii=False) + ",")
+    c.append("];")
+    c.append("")
+    c.append("// Bayraklar: { isim, merkez:[x,z], tip, yukseklik }")
+    c.append("const BAYRAKLAR = [")
+    for b in elle["bayraklar"]:
+        if not b.get("merkez"):
+            continue
+        kayit = {k: v for k, v in b.items() if not k.startswith("_")}
+        c.append("  " + json.dumps(kayit, ensure_ascii=False) + ",")
+    c.append("];")
+    c.append("")
 
     with open("cevre.js", "w", encoding="utf-8") as f:
         f.write("\n".join(c))
 
     cboyut = os.path.getsize("cevre.js")
     print(f"cevre.js yazildi: {len(agaclar)} agac, {len(isletmeler)} isletme, "
-          f"{len(otoparklar)} otopark, {len(duraklar)} durak, {len(raylar)} ray "
+          f"{len(otoparklar)} otopark, {len(duraklar)} durak, {len(raylar)} ray, "
+          f"{len(elle['girisler'])} giris, {len(elle['bayraklar'])} bayrak "
           f"— {cboyut/1024:.0f} KB")
 
 if __name__ == "__main__":

@@ -28,7 +28,7 @@ export function veriDosyasi(ad) {
 import vm from 'node:vm';
 const VERI_ADLARI = ['ONEMLI_BINALAR', 'ARKA_PLAN_BINALAR', 'PARKLAR', 'YOLLAR',
   'FISKIYELER', 'SPOR_ALANLARI', 'AGACLAR', 'ISLETMELER', 'OTOPARKLAR',
-  'DURAKLAR', 'RAYLAR'];
+  'DURAKLAR', 'RAYLAR', 'GIRISLER', 'BAYRAKLAR'];
 
 export function veriYukle() {
   const kaynak = veriDosyasi('binalar.js') + '\n' + veriDosyasi('cevre.js') +

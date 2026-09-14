@@ -173,6 +173,23 @@ test('binalar.js ve cevre.js verileri geçerli', () => {
   assert.ok(v.OTOPARKLAR.every(o => o.length >= 6));
   assert.ok(v.DURAKLAR.every(d => ['bus', 'tram', 'rail'].includes(d[2])));
   assert.ok(v.RAYLAR.every(r => r.length === 2));
+
+  // Kapılar ve bayraklar
+  assert.ok(v.GIRISLER.length >= 2, 'en az A ve C kapısı olmalı');
+  const kapıAdları = v.GIRISLER.map(g => g.isim);
+  assert.ok(kapıAdları.some(a => a.includes('A Kapısı')));
+  assert.ok(kapıAdları.some(a => a.includes('C Kapısı')));
+  for (const g of v.GIRISLER) {
+    assert.equal(g.merkez.length, 2);
+    assert.ok(Math.abs(g.merkez[0]) < 1400 && Math.abs(g.merkez[1]) < 1400);
+    assert.ok(Number.isFinite(g.aci), 'kapı açısı sayı olmalı');
+    assert.ok(typeof g.pano === 'string' && g.pano.length > 0, 'pano yazısı');
+  }
+  assert.ok(v.BAYRAKLAR.length >= 1);
+  for (const b of v.BAYRAKLAR) {
+    assert.equal(b.merkez.length, 2);
+    assert.ok(b.yukseklik >= 5 && b.yukseklik <= 30);
+  }
 });
 
 // --- geometri (three varsa) ---------------------------------------------------

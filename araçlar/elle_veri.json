@@ -337,5 +337,30 @@
   ],
   "yollar": [],
   "poiler": [],
-  "agaclar": []
+  "agaclar": [],
+  "girisler": [
+    {
+      "_aciklama": "A Kapısı (Beşevler ana giriş): OSM 39.938276, 32.822154. aci = yola dik bariyer yönü (derece).",
+      "isim": "A Kapısı",
+      "merkez": [141.2, 581.5],
+      "aci": -143.7,
+      "pano": "GAZİ ÜNİVERSİTESİ"
+    },
+    {
+      "_aciklama": "C Kapısı: OSM 'Gazi Üniversitesi C Kapısı' duraklarının arası (Bandırma Cd).",
+      "isim": "C Kapısı",
+      "merkez": [376.0, 213.0],
+      "aci": 2.6,
+      "pano": "GAZİ"
+    }
+  ],
+  "bayraklar": [
+    {
+      "_aciklama": "Rektörlük ile Dekanlık arasındaki açıklık (binalardan 43 m).",
+      "isim": "Türk Bayrağı",
+      "merkez": [85, 470],
+      "tip": "turkiye",
+      "yukseklik": 12
+    }
+  ]
 }
