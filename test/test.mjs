@@ -155,7 +155,8 @@ test('binalar.js ve cevre.js verileri geçerli', () => {
     adlar.add(b.isim);
     assert.ok(b.yukseklik >= 3 && b.yukseklik <= 200, `yükseklik: ${b.isim}`);
     for (const [x, z] of b.taban) {
-      assert.ok(Math.abs(x) < 1400 && Math.abs(z) < 1400, `sınır dışı: ${b.isim}`);
+      // Uzak bölge binaları (Gar/Mühendislik) 3200 m sınırına kadar olabilir
+      assert.ok(Math.abs(x) <= 3200 && Math.abs(z) <= 3200, `sınır dışı: ${b.isim}`);
     }
   }
   assert.ok(v.ONEMLI_BINALAR.some(b => b.osmWay), 'OSM way id taşınmalı');
@@ -189,6 +190,25 @@ test('binalar.js ve cevre.js verileri geçerli', () => {
   for (const b of v.BAYRAKLAR) {
     assert.equal(b.merkez.length, 2);
     assert.ok(b.yukseklik >= 5 && b.yukseklik <= 30);
+  }
+
+  // Uzak bölgeler (bolgeler.js) — dosya üretilmişse dolu, yoksa boş dizi kabul
+  for (const k of v.UZAK_BINALAR) {
+    assert.equal(k.length, 3);
+    assert.ok(k[1] >= 3 && k[1] <= 200, 'uzak bina yüksekliği');
+  }
+  for (const y of v.UZAK_YOLLAR) {
+    assert.equal(y.length, 3);
+    assert.ok(y[0].length >= 4);
+  }
+  for (const a of v.UZAK_AGACLAR) {
+    assert.equal(a.length, 3);
+    assert.ok(Math.hypot(a[0], a[1]) <= 3101, 'uzak ağaç sınırı');
+  }
+  assert.ok(v.BOLGELER.length >= 1, 'ışınlanma noktaları');
+  for (const b of v.BOLGELER) {
+    assert.equal(b.merkez.length, 2);
+    assert.ok(Number.isFinite(b.bakis) && Number.isFinite(b.irtifa));
   }
 });
 

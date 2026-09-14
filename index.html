@@ -95,6 +95,10 @@
     </label>
   </div>
   <div class="bolum">
+    <div class="etiket">Konumlar</div>
+    <div class="satir" id="konumButonlari"></div>
+  </div>
+  <div class="bolum">
     <div class="etiket">Çarpışma</div>
     <label class="cek"><input type="checkbox" id="chkCarpisma" checked> Binalara çarpma</label>
     <label class="cek"><input type="checkbox" id="chkAgacCarpisma" checked> Ağaçlara çarpma</label>
@@ -129,6 +133,7 @@
     <label class="cek"><input type="checkbox" data-katman="otopark" checked> Otoparklar</label>
     <label class="cek"><input type="checkbox" data-katman="ray" checked> Raylı sistem</label>
     <label class="cek"><input type="checkbox" data-katman="giris" checked> Girişler/Bayraklar</label>
+    <label class="cek"><input type="checkbox" data-katman="uzak" checked> Uzak bölgeler (Gar/Mühendislik)</label>
   </div>
   <div class="bolum">
     <button id="btnAyarlarKapat" class="tehlike">Kapat (H)</button>
@@ -169,6 +174,7 @@
 
 <script src="binalar.js"></script>
 <script src="cevre.js"></script>
+<script src="bolgeler.js"></script>
 <script type="module">
 import * as THREE from 'three';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
@@ -188,6 +194,12 @@ const RAY_L = (typeof RAYLAR === 'undefined') ? [] : RAYLAR;
 const GIRIS_L = (typeof GIRISLER === 'undefined') ? [] : GIRISLER;
 const BAYRAK_L = (typeof BAYRAKLAR === 'undefined') ? [] : BAYRAKLAR;
 const CARPISMA_YOK_L = (typeof CARPISMA_YOK === 'undefined') ? [] : CARPISMA_YOK;
+const UZAK_L = (typeof UZAK_BINALAR === 'undefined') ? [] : UZAK_BINALAR;
+const UZAK_YOL_L = (typeof UZAK_YOLLAR === 'undefined') ? [] : UZAK_YOLLAR;
+const UZAK_AGAC_L = (typeof UZAK_AGACLAR === 'undefined') ? [] : UZAK_AGACLAR;
+const BOLGE_L = (typeof BOLGELER === 'undefined') ? [] : BOLGELER;
+// Ağaç çizimi + çarpışması ortak: ana kampüs + uzak koridor ağaçları
+const TUM_AGACLAR = AGAC_L.concat(UZAK_AGAC_L);
 
 // ===== AYARLAR ================================================================
 const HIZ_VARSAYILAN  = 25;      // uçağın ileri hızı (m/s), ayarlardan değişir
@@ -201,7 +213,7 @@ const DONUS_KAZANCI   = 1.1;     // roll(°) başına dönüş hızı (°/s)
 const TIRMANIS_KAZANCI= 0.55;    // pitch(°) başına dikey hız (m/s)
 const EMA_ALFA        = 0.15;    // sensör yumuşatma (0-1, küçük = daha yumuşak)
 const DEADBAND_DERECE = 2;       // ±ölü bant
-const SINIR_YARICAP   = 1300;    // uçuş sınırı (kampüs merkezinden, m)
+const SINIR_YARICAP   = 3200;    // uçuş sınırı (Gar/Mühendislik bölgelerini kapsar, m)
 const YURUT_PITCH     = 1;       // -1 yaparsan pitch terslenir (sensör yönüne göre)
 const YURUT_ROLL      = 1;       // -1 yaparsan roll terslenir
 
@@ -215,7 +227,7 @@ kapsayici.appendChild(renderer.domElement);
 const sahne = new THREE.Scene();
 const GOKYUZU = 0x87b7d8;
 sahne.background = new THREE.Color(GOKYUZU);
-sahne.fog = new THREE.Fog(GOKYUZU, 500, 2400);
+sahne.fog = new THREE.Fog(GOKYUZU, 700, 4500);
 
 const kamera = new THREE.PerspectiveCamera(60, innerWidth / innerHeight, 0.1, 5000);
 sahne.add(new THREE.AmbientLight(0xffffff, 0.7));
@@ -225,19 +237,19 @@ sahne.add(gunes);
 
 // Zemin + grid
 const zemin = new THREE.Mesh(
-  new THREE.CircleGeometry(2800, 64),
+  new THREE.CircleGeometry(3400, 72),
   new THREE.MeshLambertMaterial({ color: 0x4a7c43 })
 );
 zemin.rotation.x = -Math.PI / 2;
 sahne.add(zemin);
-const grid = new THREE.GridHelper(2800, 56, 0xffffff, 0x689b5e);
+const grid = new THREE.GridHelper(3400, 68, 0xffffff, 0x689b5e);
 grid.material.opacity = 0.25; grid.material.transparent = true;
 sahne.add(grid);
 
 // ===== KATMAN GRUPLARI (sağ alttaki panelden aç/kapa) ==========================
 const katman = {};
 for (const ad of ['bina', 'etiket', 'arka', 'yol', 'park', 'spor', 'fiskiye',
-                  'agac', 'poi', 'otopark', 'ray', 'giris']) {
+                  'agac', 'poi', 'otopark', 'ray', 'giris', 'uzak']) {
   katman[ad] = new THREE.Group();
   sahne.add(katman[ad]);
 }
@@ -308,14 +320,15 @@ function seritDoldur(poz, renkdizi, duz, genislik, renkHex, Y) {
 }
 
 // ===== YOLLAR (genişlikli şeritler, tek mesh + vertex rengi) ==================
+// Yol tipi -> renk (merkez yollar + uzak bölge yolları ortak kullanır)
+const YOL_RENKLERI = {
+  ana: 0x3d3d44, service: 0x8f8f8f, footway: 0xd8d4c6, path: 0xd8d4c6,
+  pedestrian: 0xcac4b2, tertiary: 0x4a4a52, unclassified: 0x55555c,
+  living: 0x6b6b70, primary: 0x35353c, motorway: 0x3a3a40,
+  steps: 0xc9c2b2, cycleway: 0x8a4b4b, track: 0x8b7d63,
+};
 {
   const poz = [], renkdizi = [];
-  const YOL_RENKLERI = {
-    ana: 0x3d3d44, service: 0x8f8f8f, footway: 0xd8d4c6, path: 0xd8d4c6,
-    pedestrian: 0xcac4b2, tertiary: 0x4a4a52, unclassified: 0x55555c,
-    living: 0x6b6b70, primary: 0x35353c, motorway: 0x3a3a40,
-    steps: 0xc9c2b2, cycleway: 0x8a4b4b, track: 0x8b7d63,
-  };
   for (const [duz, genislik, tip] of YOL_L) {
     seritDoldur(poz, renkdizi, duz, genislik, YOL_RENKLERI[tip] ?? 0xd8d4c6, 0.07);
   }
@@ -363,7 +376,7 @@ for (const duz of OTOPARK_L) {
 
 // ===== AĞAÇLAR (InstancedMesh: 1 gövde + 3 yaprak = 4 çizim) ==================
 {
-  if (AGAC_L.length) {
+  if (TUM_AGACLAR.length) {
     const govdeG = new THREE.CylinderGeometry(0.16, 0.24, 1, 5);
     const yaprakG = [
       new THREE.IcosahedronGeometry(1, 0),   // geniş yapraklı (0)
@@ -377,16 +390,16 @@ for (const duz of OTOPARK_L) {
       new THREE.MeshLambertMaterial({ color: 0x557f3b }),
     ];
     const tipSayi = [0, 0, 0];
-    for (const a of AGAC_L) tipSayi[Math.min(2, Math.abs(a[2] | 0))]++;
-    const govde = new THREE.InstancedMesh(govdeG, govdeMat, AGAC_L.length);
+    for (const a of TUM_AGACLAR) tipSayi[Math.min(2, Math.abs(a[2] | 0))]++;
+    const govde = new THREE.InstancedMesh(govdeG, govdeMat, TUM_AGACLAR.length);
     const yapraklar = yaprakG.map((g, t) =>
       new THREE.InstancedMesh(g, yaprakMat[t], tipSayi[t]));
     const mat = new THREE.Matrix4(), quat = new THREE.Quaternion();
     const kon = new THREE.Vector3(), olc = new THREE.Vector3();
     const renk = new THREE.Color();
     const sayac = [0, 0, 0];
-    for (let i = 0; i < AGAC_L.length; i++) {
-      const [x, z, tipHam] = AGAC_L[i];
+    for (let i = 0; i < TUM_AGACLAR.length; i++) {
+      const [x, z, tipHam] = TUM_AGACLAR[i];
       const tip = Math.min(2, Math.abs(tipHam | 0));
       // deterministik boyut/renk: koordinat hash'i (Math.sin hızlı ve yeterli)
       const r1 = Math.abs(Math.sin(x * 12.9898 + z * 78.233) * 43758.5453) % 1;
@@ -739,9 +752,22 @@ function etiketSprite(metin) {
   c2.fillStyle = '#ffd479';
   c2.fillText(metin, 8, fontPx + 4);
   const doku = new THREE.CanvasTexture(tuval);
-  const sprite = new THREE.Sprite(new THREE.SpriteMaterial({ map: doku, depthTest: false }));
+  const sprite = new THREE.Sprite(new THREE.SpriteMaterial({
+    map: doku, depthTest: false, transparent: true }));
   sprite.scale.set(tuval.width * 0.10, tuval.height * 0.10, 1);
+  sprite.userData.mesafe = 900;   // bu mesafeden sonra görünmez
   return sprite;
+}
+// Etiketler mesafeyle söner: uzak bölgelerde ana kampüs etiketleri sıçramaz.
+function etiketGuncelle() {
+  for (const s of katman.etiket.children) {
+    const d = kamera.position.distanceTo(s.position);
+    const gorunur = d < s.userData.mesafe;
+    s.visible = gorunur;
+    if (gorunur) {
+      s.material.opacity = Math.min(1, Math.max(0.08, (s.userData.mesafe - d) / 250));
+    }
+  }
 }
 
 // ===== PENCERELER (cephe dokusu) =================================================
@@ -859,13 +885,15 @@ function dilimle(geometri, malzemeNo) {
 const ARKA_RENKLERI = [0x99a1a6, 0xa6adb1, 0x8f979c, 0xa0a6ab];
 const ARKA_VARYANT = 4;
 const arkaAyar = pencereAyar(null);
+// Pencere dokuları bir kez üretilir; arka plan ve uzak bölgeler paylaşır
+const ARKA_DOKULAR = Array.from({ length: ARKA_VARYANT }, (_, v) =>
+  pencereDokusu(arkaAyar, 101 + v * 37, arkaAyar.katAralik, true));
 let arkaMeshler = [], arkaCatMesh = null;
 function arkaKur(haric = -1) {
   for (const m of arkaMeshler) {
     katman.arka.remove(m);
     m.geometry.dispose();
-    if (m.material.map) m.material.map.dispose();
-    m.material.dispose();
+    m.material.dispose();   // doku ARKA_DOKULAR ile paylaşılır
   }
   arkaMeshler = [];
   if (arkaCatMesh) {
@@ -904,7 +932,7 @@ function arkaKur(haric = -1) {
       mergeGeometries(duvarlar[v], false),
       new THREE.MeshLambertMaterial({
         color: ARKA_RENKLERI[v],
-        map: pencereDokusu(arkaAyar, 101 + v * 37, arkaAyar.katAralik, true),
+        map: ARKA_DOKULAR[v],
       }));
     mesh.userData.tip = 'arka';
     mesh.userData.araliklar = araliklar[v];
@@ -923,6 +951,64 @@ function arkaKur(haric = -1) {
   }
 }
 arkaKur();
+
+// Uzak bölgeler (Gar/Mühendislik/koridor): ayrı merge mesh'ler, aynı dokular.
+let uzakMeshler = [];
+function uzakMeshEkle(mesh) {
+  mesh.userData.tip = 'uzak';
+  katman.uzak.add(mesh);
+  uzakMeshler.push(mesh);
+}
+function uzakKur() {
+  for (const m of uzakMeshler) {
+    katman.uzak.remove(m);
+    m.geometry.dispose();
+    m.material.dispose();   // doku ARKA_DOKULAR ile paylaşılır
+  }
+  uzakMeshler = [];
+  if (!UZAK_L.length && !UZAK_YOL_L.length) return;
+  const duvarlar = Array.from({ length: ARKA_VARYANT }, () => []);
+  const catilar = [];
+  for (const [duz, yukseklik] of UZAK_L) {
+    const taban = [];
+    for (let k = 0; k < duz.length; k += 2) taban.push([duz[k], duz[k + 1]]);
+    if (taban.length < 3) continue;
+    const g = binaGeometrisi(taban, yukseklik);
+    duvarUVGuncelle(g);
+    const gd = dilimle(g, 1), gc = dilimle(g, 0);
+    g.dispose();
+    const v = Math.abs(Math.round(duz[0] * 7 + duz[1] * 13)) % ARKA_VARYANT;
+    duvarlar[v].push(gd);
+    catilar.push(gc);
+  }
+  for (let v = 0; v < ARKA_VARYANT; v++) {
+    if (!duvarlar[v].length) continue;
+    uzakMeshEkle(new THREE.Mesh(
+      mergeGeometries(duvarlar[v], false),
+      new THREE.MeshLambertMaterial({ color: ARKA_RENKLERI[v], map: ARKA_DOKULAR[v] })));
+  }
+  if (catilar.length) {
+    uzakMeshEkle(new THREE.Mesh(
+      mergeGeometries(catilar, false),
+      new THREE.MeshLambertMaterial({ color: 0x7e858a })));
+  }
+  if (UZAK_YOL_L.length) {
+    const poz = [], renkdizi = [];
+    for (const [duz, genislik, tip] of UZAK_YOL_L) {
+      seritDoldur(poz, renkdizi, duz, genislik, YOL_RENKLERI[tip] ?? 0xd8d4c6, 0.07);
+    }
+    if (poz.length) {
+      const g = new THREE.BufferGeometry();
+      g.setAttribute('position', new THREE.Float32BufferAttribute(poz, 3));
+      g.setAttribute('color', new THREE.Float32BufferAttribute(renkdizi, 3));
+      g.computeVertexNormals();
+      const yolMesh = new THREE.Mesh(g, zeminMalzeme(0xffffff, -3, true));
+      yolMesh.renderOrder = 3;
+      uzakMeshEkle(yolMesh);
+    }
+  }
+}
+uzakKur();
 
 // Bir mesh'te faceIndex'i bina aralığına çevir (arka plan seçimi için)
 function arkaIdxBul(mesh, faceIndex) {
@@ -1098,7 +1184,7 @@ function carpismaKur() {
     ekle(pol, yuk, false);
   }
   // Ağaç silindirleri: render'daki deterministik boyut formülünün aynısı
-  carpismaAgaclar = AGAC_L.map(([x, z, tipHam]) => {
+  carpismaAgaclar = TUM_AGACLAR.map(([x, z, tipHam]) => {
     const tip = Math.min(2, Math.abs(tipHam | 0));
     const r1 = Math.abs(Math.sin(x * 12.9898 + z * 78.233) * 43758.5453) % 1;
     const r2 = Math.abs(Math.sin(x * 39.346 + z * 11.135) * 24634.6345) % 1;
@@ -1733,6 +1819,23 @@ rngHizEl.oninput = (e) => {
   try { localStorage.setItem('gazi_hiz', String(hizMs)); } catch (e2) { /* özel mod */ }
 };
 hizGoster();
+// Işınlanma: bölgeye uç (Gar/Mühendislik/Ana Kampüs)
+{
+  const konumButonlari = document.getElementById('konumButonlari');
+  for (const b of BOLGE_L) {
+    if (!b.merkez) continue;
+    const btn = document.createElement('button');
+    btn.className = 'ikincil';
+    btn.textContent = b.isim;
+    btn.onclick = () => {
+      konum.set(b.merkez[0], b.irtifa || 80, b.merkez[1]);
+      yaw = THREE.MathUtils.degToRad(b.bakis || 0);
+      kamera.position.copy(konum);
+      ayarlarToggle(false);
+    };
+    konumButonlari.appendChild(btn);
+  }
+}
 
 function gezinToggle() {
   gezinModu = !gezinModu;
@@ -2040,6 +2143,7 @@ function dongu() {
     kamera.position.copy(gezin.konum);
     kamera.lookAt(gezin.konum.clone().addScaledVector(dir, 10));
     poiGuncelle();
+    etiketGuncelle();
     durumGuncelle(`Gezin (WASD ileri/geri/sağ sol, Q/Z irtifa, +/- hız=${gezin.hiz} m/s, G/Çıkış)`);
     renderer.render(sahne, kamera);
     return;
@@ -2120,6 +2224,7 @@ function dongu() {
   }
 
   poiGuncelle();
+  etiketGuncelle();
   durumGuncelle();
   renderer.render(sahne, kamera);
 }

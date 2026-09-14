@@ -28,10 +28,12 @@ export function veriDosyasi(ad) {
 import vm from 'node:vm';
 const VERI_ADLARI = ['ONEMLI_BINALAR', 'ARKA_PLAN_BINALAR', 'PARKLAR', 'YOLLAR',
   'FISKIYELER', 'SPOR_ALANLARI', 'AGACLAR', 'ISLETMELER', 'OTOPARKLAR',
-  'DURAKLAR', 'RAYLAR', 'GIRISLER', 'BAYRAKLAR'];
+  'DURAKLAR', 'RAYLAR', 'GIRISLER', 'BAYRAKLAR', 'UZAK_BINALAR',
+  'UZAK_YOLLAR', 'UZAK_AGACLAR', 'BOLGELER'];
 
 export function veriYukle() {
   const kaynak = veriDosyasi('binalar.js') + '\n' + veriDosyasi('cevre.js') +
+    '\n' + veriDosyasi('bolgeler.js') +
     `\n;globalThis.__veri = { ${VERI_ADLARI.join(', ')} };\n`;
   const ctx = { console };
   vm.createContext(ctx);

@@ -28,11 +28,38 @@ const ONEMLI_BINALAR = [
     detay: { katsayisi: 3 }
   },
   {
+    isim: "Ankara YHT Garı",
+    taban: [[1796.3, 887.2], [1812.1, 914.1], [1856.2, 961.5], [1898.3, 995.3], [1977.0, 1046.7], [2041.0, 1077.6], [2064.5, 1084.8], [2075.8, 1082.2], [2097.0, 1069.9], [2110.5, 1053.0], [2118.7, 1029.6], [1832.9, 830.1], [1813.3, 844.7], [1801.7, 863.1], [1797.2, 878.1]],
+    yukseklik: 18,
+    osmWay: 1079040723,
+    renk: 0xb8a98c,
+    catRengi: 0x6e6e6e,
+    detay: { katsayisi: 3 }
+  },
+  {
+    isim: "Ankara Spor Salonu",
+    taban: [[2058.9, 606.7], [2066.3, 633.7], [2065.3, 648.9], [2060.4, 663.3], [2051.9, 675.9], [2040.5, 686.0], [2026.8, 692.7], [2011.9, 695.6], [1996.8, 694.6], [1982.4, 689.7], [1969.7, 681.2], [1944.5, 648.2], [1933.3, 624.5], [1929.9, 609.7], [1930.5, 594.5], [1935.0, 580.0], [1943.1, 567.1], [1954.2, 556.7], [1967.7, 549.6], [1982.5, 546.3], [1997.7, 546.8], [2012.2, 551.3], [2032.9, 566.0], [2049.2, 586.3]],
+    yukseklik: 18,
+    osmWay: 419275960,
+    renk: 0xc9bdbd,
+    catRengi: 0x6e6e6e,
+    detay: { katsayisi: 3 }
+  },
+  {
     isim: "Türk Patent Enstitüsü",
     taban: [[631.7, -404.2], [631.9, -405.8], [634.2, -406.5], [637.2, -402.6], [641.0, -407.1], [656.3, -394.2], [658.0, -396.2], [665.8, -391.4], [640.7, -360.3], [650.2, -352.3], [653.0, -352.8], [658.2, -348.3], [588.3, -265.5], [568.5, -282.1], [590.8, -308.5], [578.1, -319.1], [558.6, -295.9], [549.1, -303.9], [551.7, -307.0], [548.2, -309.9], [552.2, -311.9], [549.7, -315.4], [547.5, -314.2], [562.7, -332.2], [549.5, -343.3], [560.6, -356.5], [564.3, -353.3], [570.7, -360.8], [566.9, -364.0], [597.3, -399.9], [602.6, -395.5], [602.5, -392.6], [611.6, -384.9], [629.0, -405.6], [631.3, -403.7]],
     yukseklik: 18,
     osmWay: 418359320,
     renk: 0xd8c9a8,
+    catRengi: 0x6e6e6e,
+    detay: { katsayisi: 3 }
+  },
+  {
+    isim: "Maltepe Pazarı",
+    taban: [[2381.6, 1580.2], [2450.4, 1618.1], [2495.8, 1535.6], [2427.0, 1497.7]],
+    yukseklik: 18,
+    osmWay: 404870014,
+    renk: 0xd0b49a,
     catRengi: 0x6e6e6e,
     detay: { katsayisi: 3 }
   },
@@ -46,6 +73,15 @@ const ONEMLI_BINALAR = [
     detay: { katsayisi: 3 }
   },
   {
+    isim: "Medipol Üniversitesi",
+    taban: [[2129.4, 1175.3], [2152.1, 1147.9], [2266.2, 1238.5], [2243.0, 1266.8]],
+    yukseklik: 18,
+    osmWay: 1084489051,
+    renk: 0xadb8c4,
+    catRengi: 0x6e6e6e,
+    detay: { katsayisi: 3 }
+  },
+  {
     isim: "Türkiye Voleybol Federasyonu",
     taban: [[-53.1, 833.8], [-38.3, 799.3], [26.3, 827.2], [-0.8, 890.0], [-65.4, 862.2]],
     yukseklik: 18,
@@ -53,6 +89,15 @@ const ONEMLI_BINALAR = [
     renk: 0xb8a98c,
     catRengi: 0x6e6e6e,
     detay: { katsayisi: 3 }
+  },
+  {
+    isim: "Gazi Üniversitesi Mühendislik Fakültesi",
+    taban: [[2268.4, 1396.5], [2280.7, 1405.9], [2298.3, 1382.6], [2225.8, 1327.6], [2228.1, 1324.5], [2185.9, 1292.6], [2166.0, 1318.8], [2214.6, 1355.7], [2212.8, 1358.0], [2233.3, 1373.5], [2235.0, 1371.2]],
+    yukseklik: 24,
+    osmWay: 421444520,
+    renk: 0xb0a896,
+    catRengi: 0x6e6e6e,
+    detay: { katsayisi: 4 }
   },
   {
     isim: "Gazi Üniversitesi Yüzme Havuzu",
@@ -64,10 +109,37 @@ const ONEMLI_BINALAR = [
     detay: { katsayisi: 3 }
   },
   {
+    isim: "Ankara Garı",
+    taban: [[1980.0, 799.8], [1973.9, 808.7], [1954.8, 794.7], [1951.6, 799.3], [1924.0, 780.2], [1912.3, 795.9], [1967.8, 834.9], [1961.8, 843.8], [1981.6, 858.1], [1988.1, 848.8], [2035.7, 881.3], [2046.0, 865.2], [2027.1, 851.7], [2030.2, 846.6], [2012.3, 833.8], [2017.2, 827.4], [1998.4, 814.2]],
+    yukseklik: 18,
+    osmWay: 1079039328,
+    renk: 0xcfc4b0,
+    catRengi: 0x6e6e6e,
+    detay: { katsayisi: 3 }
+  },
+  {
+    isim: "CSO Ada Ankara",
+    taban: [[2549.6, 1182.0], [2529.6, 1196.8], [2518.5, 1181.8], [2595.9, 1124.6], [2622.2, 1160.3], [2544.9, 1217.5], [2533.8, 1202.5], [2553.8, 1187.7]],
+    yukseklik: 18,
+    osmWay: 879793992,
+    renk: 0xb8a98c,
+    catRengi: 0x6e6e6e,
+    detay: { katsayisi: 3 }
+  },
+  {
     isim: "Eğitim Fakültesi Hersek Binası",
     taban: [[111.7, 193.7], [95.7, 213.6], [94.6, 212.6], [87.8, 220.1], [4.2, 144.5], [20.2, 124.6], [21.4, 125.6], [28.1, 118.1]],
     yukseklik: 18,
     osmWay: 419040725,
+    renk: 0xb5c2c9,
+    catRengi: 0x6e6e6e,
+    detay: { katsayisi: 3 }
+  },
+  {
+    isim: "Maya Göz Hastanesi",
+    taban: [[2254.4, 1499.2], [2304.1, 1538.5], [2334.5, 1500.1], [2300.5, 1473.3], [2322.6, 1445.3], [2306.8, 1432.8]],
+    yukseklik: 18,
+    osmWay: 404870016,
     renk: 0xb5c2c9,
     catRengi: 0x6e6e6e,
     detay: { katsayisi: 3 }
@@ -91,6 +163,15 @@ const ONEMLI_BINALAR = [
     detay: { katsayisi: 3 }
   },
   {
+    isim: "Selim Sırrı Tarcan Spor Salonu",
+    taban: [[2412.9, 942.1], [2455.2, 953.4], [2440.6, 1023.7], [2396.6, 1013.4]],
+    yukseklik: 18,
+    osmWay: 28470451,
+    renk: 0xadb8c4,
+    catRengi: 0x6e6e6e,
+    detay: { katsayisi: 3 }
+  },
+  {
     isim: "Ankara Üniversitesi Diş Hekimliği Fakültesi",
     taban: [[368.6, 644.6], [410.0, 605.3], [399.1, 593.8], [415.5, 578.3], [464.8, 630.3], [452.0, 642.4], [430.2, 619.4], [385.2, 662.1]],
     yukseklik: 18,
@@ -100,11 +181,29 @@ const ONEMLI_BINALAR = [
     detay: { katsayisi: 3 }
   },
   {
+    isim: "Muhsin Ertuğrul Tiyatrosu",
+    taban: [[2367.3, 623.2], [2393.8, 593.6], [2419.9, 617.0], [2418.6, 618.5], [2442.3, 636.5], [2413.6, 668.5], [2392.7, 643.7], [2391.5, 645.0]],
+    yukseklik: 18,
+    osmWay: 419393100,
+    renk: 0xb0a896,
+    catRengi: 0x6e6e6e,
+    detay: { katsayisi: 3 }
+  },
+  {
     isim: "Mevlana Camii",
     taban: [[441.4, 195.9], [464.6, 259.6], [499.7, 246.8], [476.5, 183.1]],
     yukseklik: 18,
     osmWay: 693947352,
     renk: 0xcabfb2,
+    catRengi: 0x6e6e6e,
+    detay: { katsayisi: 3 }
+  },
+  {
+    isim: "Demirtepe",
+    taban: [[2292.6, 1938.8], [2317.4, 1931.2], [2347.0, 2019.5], [2322.0, 2026.8]],
+    yukseklik: 18,
+    osmWay: 1497467633,
+    renk: 0xcfc4b0,
     catRengi: 0x6e6e6e,
     detay: { katsayisi: 3 }
   },
@@ -127,11 +226,38 @@ const ONEMLI_BINALAR = [
     detay: { katsayisi: 3 }
   },
   {
+    isim: "Gazi İş Merkezi",
+    taban: [[2257.3, 1563.4], [2238.3, 1586.3], [2250.0, 1615.2], [2270.1, 1629.6], [2295.7, 1593.0]],
+    yukseklik: 42,
+    osmWay: 469671364,
+    renk: 0xb5c2c9,
+    catRengi: 0x6e6e6e,
+    detay: { katsayisi: 7 }
+  },
+  {
+    isim: "CSO Ada Ankara Tarihi Salon",
+    taban: [[2523.6, 1005.2], [2518.9, 1024.3], [2471.5, 1012.6], [2476.2, 993.5], [2481.2, 994.8], [2486.9, 971.5], [2490.7, 972.4], [2491.6, 968.8], [2521.5, 976.1], [2520.6, 979.8], [2524.4, 980.7], [2518.6, 1003.9]],
+    yukseklik: 18,
+    osmWay: 472903884,
+    renk: 0xd0b49a,
+    catRengi: 0x6e6e6e,
+    detay: { katsayisi: 3 }
+  },
+  {
     isim: "MEB Şura Salonu",
     taban: [[387.5, 800.1], [421.8, 824.3], [424.5, 836.3], [395.7, 863.4], [366.0, 820.7]],
     yukseklik: 18,
     osmWay: 474010687,
     renk: 0xcfc4b0,
+    catRengi: 0x6e6e6e,
+    detay: { katsayisi: 3 }
+  },
+  {
+    isim: "Akhan İş Merkezi",
+    taban: [[2271.1, 1655.6], [2297.2, 1644.4], [2324.5, 1653.4], [2327.8, 1659.3], [2320.4, 1676.5], [2316.3, 1675.8], [2307.3, 1696.3], [2299.1, 1695.2], [2296.1, 1691.1], [2286.4, 1694.4]],
+    yukseklik: 18,
+    osmWay: 1217116792,
+    renk: 0xadb8c4,
     catRengi: 0x6e6e6e,
     detay: { katsayisi: 3 }
   },
@@ -163,6 +289,15 @@ const ONEMLI_BINALAR = [
     detay: { katsayisi: 3 }
   },
   {
+    isim: "Migros",
+    taban: [[2300.5, 1473.3], [2334.5, 1500.1], [2356.6, 1472.1], [2322.6, 1445.3]],
+    yukseklik: 18,
+    osmWay: 404870018,
+    renk: 0xcfc4b0,
+    catRengi: 0x6e6e6e,
+    detay: { katsayisi: 3 }
+  },
+  {
     isim: "Rektörlük",
     taban: [[154.2, 452.3], [157.1, 450.2], [160.1, 454.3], [151.5, 460.6], [153.4, 463.2], [162.0, 456.9], [165.6, 461.8], [152.6, 471.3], [147.1, 463.8], [144.5, 465.7], [150.1, 473.3], [136.3, 483.3], [127.7, 471.6], [139.6, 462.9], [132.6, 453.3], [125.3, 458.6], [121.6, 453.6], [128.9, 448.3], [121.9, 438.7], [110.0, 447.4], [101.4, 435.7], [115.2, 425.6], [120.8, 433.2], [123.4, 431.3], [117.8, 423.7], [130.8, 414.2], [134.4, 419.1], [125.8, 425.4], [127.7, 428.1], [136.4, 421.8], [139.4, 425.9], [136.4, 428.1]],
     yukseklik: 24,
@@ -176,7 +311,7 @@ const ONEMLI_BINALAR = [
     taban: [[318.3, 562.6], [285.9, 545.4], [305.1, 509.3], [337.4, 526.5]],
     yukseklik: 18,
     osmWay: 418645367,
-    renk: 0xcabfb2,
+    renk: 0xc9bdbd,
     catRengi: 0x6e6e6e,
     detay: { katsayisi: 3 }
   },
@@ -195,6 +330,15 @@ const ONEMLI_BINALAR = [
     yukseklik: 18,
     osmWay: 418371824,
     renk: 0xcabfb2,
+    catRengi: 0x6e6e6e,
+    detay: { katsayisi: 3 }
+  },
+  {
+    isim: "Vehbi Koç Öğrenci Yurdu",
+    taban: [[2168.7, 1620.0], [2140.8, 1632.9], [2135.3, 1620.9], [2148.5, 1614.8], [2137.7, 1591.5], [2124.5, 1597.6], [2118.9, 1585.6], [2146.9, 1572.7]],
+    yukseklik: 18,
+    osmWay: 225661450,
+    renk: 0xc2b6a3,
     catRengi: 0x6e6e6e,
     detay: { katsayisi: 3 }
   },
@@ -222,6 +366,42 @@ const ONEMLI_BINALAR = [
     yukseklik: 18,
     osmWay: 418125657,
     renk: 0xcfc4b0,
+    catRengi: 0x6e6e6e,
+    detay: { katsayisi: 3 }
+  },
+  {
+    isim: "TİKA",
+    taban: [[1612.4, 918.2], [1574.8, 969.0], [1585.4, 976.6], [1620.9, 932.0], [1619.3, 929.9], [1622.7, 925.5]],
+    yukseklik: 18,
+    osmWay: 412718450,
+    renk: 0xd8c9a8,
+    catRengi: 0x6e6e6e,
+    detay: { katsayisi: 3 }
+  },
+  {
+    isim: "Gazi Üniversitesi Mühendislik Yemekhanesi",
+    taban: [[2197.7, 1369.4], [2214.1, 1381.9], [2205.5, 1393.3], [2208.5, 1395.6], [2202.0, 1404.2], [2198.9, 1401.9], [2190.2, 1413.3], [2173.8, 1400.8]],
+    yukseklik: 18,
+    osmWay: 421444541,
+    renk: 0xcfc4b0,
+    catRengi: 0x6e6e6e,
+    detay: { katsayisi: 3 }
+  },
+  {
+    isim: "Kudret International Hospital",
+    taban: [[2076.2, 1520.2], [2111.0, 1497.4], [2121.9, 1514.1], [2087.1, 1536.9]],
+    yukseklik: 18,
+    osmWay: 225661426,
+    renk: 0xb8a98c,
+    catRengi: 0x6e6e6e,
+    detay: { katsayisi: 3 }
+  },
+  {
+    isim: "Mühendislik Fakültesi Dekanlığı",
+    taban: [[2143.3, 1260.2], [2128.2, 1280.1], [2107.8, 1264.6], [2122.9, 1244.7], [2142.4, 1259.5]],
+    yukseklik: 18,
+    osmWay: 421444536,
+    renk: 0xc9bdbd,
     catRengi: 0x6e6e6e,
     detay: { katsayisi: 3 }
   },
@@ -262,6 +442,51 @@ const ONEMLI_BINALAR = [
     detay: { katsayisi: 3 }
   },
   {
+    isim: "Hotel Içkale",
+    taban: [[2047.8, 1472.5], [2075.7, 1454.3], [2083.8, 1466.8], [2055.9, 1485.0]],
+    yukseklik: 18,
+    osmWay: 225661412,
+    renk: 0xcabfb2,
+    catRengi: 0x6e6e6e,
+    detay: { katsayisi: 3 }
+  },
+  {
+    isim: "Anadolu Ajansı",
+    taban: [[1741.9, 1095.0], [1755.3, 1076.8], [1770.8, 1088.2], [1757.4, 1106.4]],
+    yukseklik: 18,
+    osmWay: 421444518,
+    renk: 0xb0a896,
+    catRengi: 0x6e6e6e,
+    detay: { katsayisi: 3 }
+  },
+  {
+    isim: "Beste Apartmanı",
+    taban: [[2175.1, 1826.7], [2198.7, 1817.3], [2204.7, 1832.5], [2181.2, 1841.9]],
+    yukseklik: 32,
+    osmWay: 225611098,
+    renk: 0xd8c9a8,
+    catRengi: 0x6e6e6e,
+    detay: { katsayisi: 5 }
+  },
+  {
+    isim: "Aliağalar Apartmanı",
+    taban: [[1871.4, 1451.2], [1865.5, 1476.2], [1880.8, 1478.2], [1888.8, 1457.2]],
+    yukseklik: 18,
+    osmWay: 225597425,
+    renk: 0xcfc4b0,
+    catRengi: 0x6e6e6e,
+    detay: { katsayisi: 3 }
+  },
+  {
+    isim: "BMF Grup",
+    taban: [[2551.4, 1766.8], [2550.5, 1769.7], [2537.4, 1776.4], [2525.7, 1755.9], [2542.0, 1748.4]],
+    yukseklik: 60,
+    osmWay: 697887907,
+    renk: 0xb8a98c,
+    catRengi: 0x6e6e6e,
+    detay: { katsayisi: 10 }
+  },
+  {
     isim: "Mitat Genç Görme Engelliler Orta Okulu",
     taban: [[23.6, 211.9], [4.4, 186.3], [13.9, 179.2], [33.0, 204.9]],
     yukseklik: 18,
@@ -271,11 +496,20 @@ const ONEMLI_BINALAR = [
     detay: { katsayisi: 3 }
   },
   {
+    isim: "Baran Apartmanı",
+    taban: [[1910.2, 1772.4], [1921.6, 1761.8], [1937.8, 1779.0], [1926.4, 1789.7]],
+    yukseklik: 32,
+    osmWay: 225602846,
+    renk: 0xb5c2c9,
+    catRengi: 0x6e6e6e,
+    detay: { katsayisi: 5 }
+  },
+  {
     isim: "Hizmet-İş",
     taban: [[-225.2, 18.2], [-212.5, 14.7], [-206.0, 38.6], [-218.7, 42.1]],
     yukseklik: 18,
     osmWay: 397840997,
-    renk: 0xb0a896,
+    renk: 0xd0b49a,
     catRengi: 0x6e6e6e,
     detay: { katsayisi: 3 }
   },
@@ -284,9 +518,27 @@ const ONEMLI_BINALAR = [
     taban: [[-69.7, -26.8], [-58.2, -30.0], [-51.4, -5.7], [-63.0, -2.5]],
     yukseklik: 18,
     osmWay: 397841020,
-    renk: 0xd8c9a8,
+    renk: 0xc2b6a3,
     catRengi: 0x6e6e6e,
     detay: { katsayisi: 3 }
+  },
+  {
+    isim: "Maltepe Otel 2000",
+    taban: [[1865.2, 1264.1], [1885.5, 1278.8], [1878.5, 1288.5], [1858.1, 1273.8]],
+    yukseklik: 18,
+    osmWay: 225540505,
+    renk: 0xadb8c4,
+    catRengi: 0x6e6e6e,
+    detay: { katsayisi: 3 }
+  },
+  {
+    isim: "Kesit Cafe",
+    taban: [[2218.5, 1419.8], [2228.6, 1406.5], [2215.4, 1396.5], [2205.3, 1409.8]],
+    yukseklik: 6,
+    osmWay: 421444532,
+    renk: 0xcabfb2,
+    catRengi: 0x6e6e6e,
+    detay: { katsayisi: 1 }
   },
   {
     isim: "Barış Apartmanı",
@@ -302,7 +554,16 @@ const ONEMLI_BINALAR = [
     taban: [[-194.0, 8.7], [-183.5, 5.5], [-176.9, 27.2], [-187.3, 30.4]],
     yukseklik: 18,
     osmWay: 397841077,
-    renk: 0xb8a98c,
+    renk: 0xd8c9a8,
+    catRengi: 0x6e6e6e,
+    detay: { katsayisi: 3 }
+  },
+  {
+    isim: "Başkent Konukevi",
+    taban: [[1633.1, 1441.8], [1642.2, 1453.6], [1629.8, 1463.2], [1620.7, 1451.3]],
+    yukseklik: 18,
+    osmWay: 225597398,
+    renk: 0xcfc4b0,
     catRengi: 0x6e6e6e,
     detay: { katsayisi: 3 }
   },
@@ -311,7 +572,7 @@ const ONEMLI_BINALAR = [
     taban: [[-452.5, 143.5], [-453.7, 136.8], [-451.1, 136.3], [-451.9, 132.0], [-448.4, 131.3], [-449.1, 127.3], [-441.2, 125.8], [-438.3, 140.8]],
     yukseklik: 12,
     osmWay: 1554352151,
-    renk: 0xc9bdbd,
+    renk: 0xb8a98c,
     catRengi: 0x6e6e6e,
     detay: { katsayisi: 2 }
   },
@@ -325,11 +586,29 @@ const ONEMLI_BINALAR = [
     detay: { katsayisi: 2 }
   },
   {
+    isim: "Milli Mücadele Atatürk Konutu",
+    taban: [[1892.6, 779.4], [1904.7, 787.7], [1899.5, 795.5], [1887.3, 787.1]],
+    yukseklik: 12,
+    osmWay: 1464367544,
+    renk: 0xb5c2c9,
+    catRengi: 0x6e6e6e,
+    detay: { katsayisi: 2 }
+  },
+  {
     isim: "Halıcıoğlu Market",
     taban: [[-596.1, 93.3], [-584.6, 89.9], [-581.4, 101.0], [-592.9, 104.3]],
     yukseklik: 12,
     osmWay: 433835166,
     renk: 0xd8c9a8,
+    catRengi: 0x6e6e6e,
+    detay: { katsayisi: 2 }
+  },
+  {
+    isim: "THK Havacılık Müzesi ve Paraşüt Kulesi",
+    taban: [[1880.3, 583.3], [1874.3, 584.8], [1875.8, 590.9], [1881.9, 589.4]],
+    yukseklik: 12,
+    osmWay: 1272385255,
+    renk: 0xc2b6a3,
     catRengi: 0x6e6e6e,
     detay: { katsayisi: 2 }
   },

@@ -35,7 +35,7 @@ import urllib.request
 MERKEZ_LAT = 39.9435
 MERKEZ_LON = 32.8205
 YARICAP_M = 900
-ONEMLI_BINA_LIMITI = 40
+ONEMLI_BINA_LIMITI = 80
 ARACLAR = os.path.dirname(os.path.abspath(__file__))
 ONBELLEK = os.path.join(ARACLAR, "osm_onbellek.json")
 ELLE_VERI = os.path.join(ARACLAR, "elle_veri.json")
@@ -72,6 +72,59 @@ SORGULAR = {
     "otoparklar": f'way(around:{YARICAP_M},{MERKEZ_LAT},{MERKEZ_LON})["amenity"="parking"];',
     "raylar":   f'way(around:{YARICAP_M},{MERKEZ_LAT},{MERKEZ_LON})["railway"~"^(rail|light_rail|tram|subway)$"];',
 }
+
+# Uzak bölgeler (ana kampüs dışı): tam detay çekilir, bolgeler.js'e yazılır
+UZAK_BOLGELER = [
+    ("Maltepe (Mühendislik)", 39.9313389, 32.8466500, 600),
+    ("Ankara Garı", 39.9364000, 32.8438000, 500),
+]
+# Celal Bayar Bulvarı koridoru: ana kampüsten Gar ve Mühendislik'e güzergâh
+KORIDOR = [
+    (39.9416898, 32.8247887),   # C Kapısı / doğu kampüs
+    (39.9441900, 32.8249800),   # Celal Bayar başlangıcı
+    (39.9371000, 32.8381000),   # Celal Bayar güneydoğu
+    (39.9364000, 32.8438000),   # Ankara Garı
+    (39.9313389, 32.8466500),   # Mühendislik (Maltepe)
+]
+KORIDOR_BINA_YARICAP = 170
+KORIDOR_YOL_YARICAP = 120
+KORIDOR_AGAC_YARICAP = 90
+AGAC_UZAK_ARALIK = 40.0    # koridor yol kenarı ağaç aralığı (m, seyrek)
+AGAC_UZAK_LIMIT = 2000     # uzak bölge ağaç üst sınırı
+
+def _koridor_noktalari():
+    return ",".join(f"{lat},{lon}" for lat, lon in KORIDOR)
+
+UZAK_SORGULAR = {}
+for _ad, _lat, _lon, _r in UZAK_BOLGELER:
+    UZAK_SORGULAR[f"{_ad} bina"] = f'way(around:{_r},{_lat},{_lon})["building"];'
+    UZAK_SORGULAR[f"{_ad} yol"] = f'way(around:{_r},{_lat},{_lon})["highway"];'
+    UZAK_SORGULAR[f"{_ad} agac"] = (
+        f'node(around:{_r},{_lat},{_lon})["natural"="tree"];'
+        f'way(around:{_r},{_lat},{_lon})["natural"~"^(tree_row|wood)$"];')
+_KOR = _koridor_noktalari()
+UZAK_SORGULAR["Koridor bina"] = f'way(around:{KORIDOR_BINA_YARICAP},{_KOR})["building"];'
+UZAK_SORGULAR["Koridor yol"] = (
+    f'way(around:{KORIDOR_YOL_YARICAP},{_KOR})["highway"~"^(primary|secondary|tertiary|trunk|living_street|service)$"];')
+UZAK_SORGULAR["Koridor agac"] = (
+    f'node(around:{KORIDOR_AGAC_YARICAP},{_KOR})["natural"="tree"];'
+    f'way(around:{KORIDOR_AGAC_YARICAP},{_KOR})["natural"="tree_row"];')
+
+# Yol tipine göre şerit genişliği (m) ve render tipi (merkez + uzak bölge ortak)
+YOL_GENISLIK = {"footway": 1.4, "path": 1.4, "pedestrian": 2.5, "service": 3.5,
+                "residential": 4.5, "secondary": 6.0, "trunk": 8.0,
+                "trunk_link": 5.0, "primary": 8.0, "tertiary": 6.0,
+                "tertiary_link": 4.0, "unclassified": 4.5, "living_street": 4.0,
+                "primary_link": 6.0, "motorway": 10.0, "motorway_link": 6.0,
+                "steps": 1.5, "cycleway": 2.0, "track": 3.0}
+YOL_TIP = {"footway": "footway", "path": "path", "pedestrian": "pedestrian",
+           "service": "service", "residential": "service",
+           "secondary": "ana", "trunk": "ana", "trunk_link": "ana", "primary": "ana",
+           "tertiary": "tertiary", "tertiary_link": "tertiary",
+           "unclassified": "unclassified", "living_street": "living",
+           "primary_link": "primary", "motorway": "motorway",
+           "motorway_link": "motorway", "steps": "steps",
+           "cycleway": "cycleway", "track": "track"}
 
 # İşletme/POI olarak gösterilecek etiket değerleri (hacmi sınırlı tutar)
 POI_TIPLERI = {
@@ -124,24 +177,34 @@ def overpass_calistir(alt_sorgular):
     raise RuntimeError(f"Tüm Overpass uçları başarısız: {son_hata}")
 
 def osm_verisi_edin(sadece_onbellek=False):
+    """(merkez, uzak) veri çifti döndürür. Önbellek: {"merkez":..., "uzak":...};
+    eski tek-blok önbellek yalnız merkez sayılır."""
+    def _onbellek_oku():
+        with open(ONBELLEK, "r", encoding="utf-8") as f:
+            veri = json.load(f)
+        if isinstance(veri, dict) and "elements" in veri:
+            return veri, None        # eski format
+        return veri.get("merkez"), veri.get("uzak")
+
     if sadece_onbellek:
         if os.path.exists(ONBELLEK):
             print("  Önbellek kullanılıyor (--onbellek):", ONBELLEK)
-            with open(ONBELLEK, "r", encoding="utf-8") as f:
-                return json.load(f)
+            return _onbellek_oku()
         sys.exit("--onbellek verildi ama osm_onbellek.json yok; önce ağlı çalıştırın.")
     try:
-        veri = overpass_calistir(SORGULAR.values())
+        merkez = overpass_calistir(SORGULAR.values())
+        print(f"  Merkez: {len(merkez.get('elements', []))} OSM elemanı")
+        uzak = overpass_calistir(UZAK_SORGULAR.values())
+        print(f"  Uzak: {len(uzak.get('elements', []))} OSM elemanı")
         with open(ONBELLEK, "w", encoding="utf-8") as f:
-            json.dump(veri, f)
-        print(f"  {len(veri.get('elements', []))} OSM elemanı (önbelleğe yazıldı)")
-        return veri
+            json.dump({"merkez": merkez, "uzak": uzak}, f)
+        print("  (önbelleğe yazıldı)")
+        return merkez, uzak
     except RuntimeError as e:
         print(f"  UYARI: {e}")
         if os.path.exists(ONBELLEK):
             print("  Önbellekten devam ediliyor:", ONBELLEK)
-            with open(ONBELLEK, "r", encoding="utf-8") as f:
-                return json.load(f)
+            return _onbellek_oku()
         sys.exit("Önbellek de yok; internet varken tekrar deneyin.")
 
 # --- Koordinat dönüşümü --------------------------------------------------------
@@ -243,9 +306,11 @@ def cizgi_agac(pts, adim, tohum, tip=0):
         tasinan = t - L
     return cikti
 
-def yol_agac(pts, tohum, icinde, tip=0):
+def yol_agac(pts, tohum, icinde, tip=0, aralik=None, yan=None):
     """Kampüs yolu boyunca iki yana dönüşümlü ağaç sırası.
     icinde(x, z) False dönerse nokta atlanır (bbox/bina filtresi)."""
+    aralik = AGAC_YOL_ARALIK if aralik is None else aralik
+    yan = AGAC_YOL_YAN if yan is None else yan
     rnd = random.Random(tohum)
     cikti = []
     tasinan = 0.0
@@ -260,17 +325,17 @@ def yol_agac(pts, tohum, icinde, tip=0):
         ux, uz = dx / L, dz / L
         nx, nz = -uz, ux
         # Hafif doğal sapma: sabit ızgara yerine ±%15 jitter
-        qx0 = (rnd.random() - 0.5) * AGAC_YOL_ARALIK * 0.3
+        qx0 = (rnd.random() - 0.5) * aralik * 0.3
         t = tasinan + qx0
         while t < L:
             f = t / L
             px, pz = x1 + dx * f, z1 + dz * f
-            off = AGAC_YOL_YAN * taraf
+            off = yan * taraf
             qx, qz = px + nx * off, pz + nz * off
             if icinde(qx, qz):
                 cikti.append((round(qx, 1), round(qz, 1), tip))
             taraf = -taraf
-            t += AGAC_YOL_ARALIK
+            t += aralik
         tasinan = t - L
     return cikti
 
@@ -286,6 +351,105 @@ def bina_engel(kutular, x, z):
         if x1 <= x <= x2 and z1 <= z <= z2 and nokta_icinde(x, z, pol):
             return True
     return False
+
+def bakis_hesapla(x, z, hedef=(0.0, 400.0)):
+    """Verilen noktadan kampüs merkezine dönük yaw açısı (derece)."""
+    dx, dz = hedef[0] - x, hedef[1] - z
+    return round(math.degrees(math.atan2(-dx, -dz)), 1)
+
+def uzak_veriyi_isle(veri, d2, onemli_uzak, sil, atlanan=None):
+    """Maltepe/Gar/koridor verisini binalar.js'ten ayrı tutar (bolgeler.js).
+    İsimli binalar ONEMLI'ye eklenir; kalanı uzak listelerine gider.
+    atlanan: merkez sorgusunda zaten işlenmiş way id'leri (çift kayıt olmasın)."""
+    atlanan = atlanan or set()
+    dugumler = {e["id"]: (e["lat"], e["lon"]) for e in veri["elements"]
+                if e["type"] == "node"}
+    binalar, yollar, agaclar = [], [], []
+    gorulen = set()
+    islenen = set()
+    for e in veri["elements"]:
+        if e["type"] == "node":
+            t = e.get("tags", {})
+            if t.get("natural") == "tree":
+                x, z = d2.xy(e["lat"], e["lon"])
+                if math.hypot(x, z) <= 3100:
+                    agaclar.append((x, z, 1 if t.get("leaf_type") == "needleleaved" else 0))
+            continue
+        if (e["type"] != "way" or e.get("id") in sil
+                or e.get("id") in atlanan or e.get("id") in islenen):
+            continue
+        islenen.add(e.get("id"))
+        coords = [d2.xy(*dugumler[n]) for n in e.get("nodes", []) if n in dugumler]
+        if len(coords) < 2:
+            continue
+        kapali = len(coords) >= 4 and coords[0] == coords[-1]
+        if kapali:
+            coords = coords[:-1]
+        t = e.get("tags", {})
+        if "building" in t:
+            if not kapali or len(coords) < 3:
+                continue
+            pol = rdp(coords, 1.5)
+            if len(pol) < 3:
+                continue
+            yuk, kat = yukseklik_belirle(pol, t)
+            duz = []
+            for x, z in pol:
+                duz.extend([x, z])
+            binalar.append([duz, yuk, e.get("id")])
+            ad = t.get("name")
+            if ad and ad not in gorulen:
+                gorulen.add(ad)
+                onemli_uzak.append({
+                    "isim": ad, "taban": pol, "yukseklik": yuk, "kat": kat,
+                    "osmWay": e.get("id"), "_uzak": True,
+                    "_uni": (t.get("amenity") in ("university", "library")
+                             or t.get("building") == "university"),
+                })
+        elif "highway" in t:
+            hw = t["highway"]
+            if hw not in YOL_GENISLIK:
+                continue
+            pol = rdp(coords, 1.5)
+            if len(pol) >= 2:
+                duz = []
+                for x, z in pol:
+                    duz.extend([x, z])
+                yollar.append([duz, YOL_GENISLIK[hw], YOL_TIP[hw]])
+        elif t.get("natural") == "tree_row":
+            pol = rdp(coords, 1.5)
+            agaclar.extend(cizgi_agac(pol, 14.0, e.get("id", 0), 0))
+        elif t.get("natural") == "wood" or t.get("landuse") in ("forest", "orchard"):
+            if kapali and len(coords) >= 3:
+                pol = rdp(coords, 1.5)
+                if len(pol) >= 3:
+                    agaclar.extend(agac_doldur(pol, 26.0, e.get("id", 0), 0))
+
+    # Koridor/bölge yolları boyunca seyrek ağaç (bina kaçınmalı)
+    kutular = [bina_kutusu([[duz[i], duz[i + 1]] for i in range(0, len(duz), 2)])
+               for duz, _, _ in binalar]
+
+    def uygun(x, z, _k=kutular):
+        return math.hypot(x, z) <= 3100 and not bina_engel(_k, x, z)
+
+    for duz, _, tip in yollar:
+        if tip in ("ana", "tertiary", "primary", "motorway", "living"):
+            pts = [(duz[i], duz[i + 1]) for i in range(0, len(duz), 2)]
+            tohum = abs(int(duz[0]) * 31 + int(duz[1]))
+            agaclar.extend(yol_agac(pts, tohum, uygun, 0, AGAC_UZAK_ARALIK, 5.0))
+
+    sonuc, gor = [], set()
+    for x, z, tip in agaclar:
+        if len(sonuc) >= AGAC_UZAK_LIMIT:
+            break
+        if math.hypot(x, z) > 3100:
+            continue
+        a = (round(x, 1), round(z, 1))
+        if a in gor:
+            continue
+        gor.add(a)
+        sonuc.append((a[0], a[1], tip))
+    return binalar, yollar, sonuc
 
 def yukseklik_tahmin(p):
     # Kullanıcı kararı: kat aralığı daraltıldı (2-3), görsel ölçek ×2 (kat*3m*2).
@@ -345,7 +509,7 @@ def renk_coz(deger):
 
 # --- Ana işlem ------------------------------------------------------------------
 def main():
-    veri = osm_verisi_edin("--onbellek" in sys.argv[1:])
+    veri, uzak_veri = osm_verisi_edin("--onbellek" in sys.argv[1:])
     elle = elle_veriyi_yukle()
     sil = {int(x) for x in elle["sil"]}
     # Çarpışması kapatılacak OSM binaları (cevre/binalar tarafında Set olarak kullanılır)
@@ -359,22 +523,6 @@ def main():
             sil.add(int(b["osmWay"]))
     d2 = Donusturucu(MERKEZ_LAT, MERKEZ_LON)
     dugumler = {e["id"]: (e["lat"], e["lon"]) for e in veri["elements"] if e["type"] == "node"}
-
-    # Yol tipine göre şerit genişliği (m) ve render tipi
-    YOL_GENISLIK = {"footway": 1.4, "path": 1.4, "pedestrian": 2.5, "service": 3.5,
-                    "residential": 4.5, "secondary": 6.0, "trunk": 8.0,
-                    "trunk_link": 5.0, "primary": 8.0, "tertiary": 6.0,
-                    "tertiary_link": 4.0, "unclassified": 4.5, "living_street": 4.0,
-                    "primary_link": 6.0, "motorway": 10.0, "motorway_link": 6.0,
-                    "steps": 1.5, "cycleway": 2.0, "track": 3.0}
-    YOL_TIP = {"footway": "footway", "path": "path", "pedestrian": "pedestrian",
-               "service": "service", "residential": "service",
-               "secondary": "ana", "trunk": "ana", "trunk_link": "ana", "primary": "ana",
-               "tertiary": "tertiary", "tertiary_link": "tertiary",
-               "unclassified": "unclassified", "living_street": "living",
-               "primary_link": "primary", "motorway": "motorway",
-               "motorway_link": "motorway", "steps": "steps",
-               "cycleway": "cycleway", "track": "track"}
 
     onemli, arka_plan, parklar, yollar, fiskiyeler, spor = [], [], [], [], [], []
     gorulen = set()
@@ -559,6 +707,15 @@ def main():
                 fiskiyeler.append({"isim": isim or "Fıskiye",
                                    "merkez": [round(cx, 1), round(cz, 1)],
                                    "yaricap": round(r, 1)})
+
+    # --- Uzak bölgeler: Maltepe + Gar + Celal Bayar koridoru (bolgeler.js) ---
+    onemli_uzak = []
+    uzak_binalar, uzak_yollar, uzak_agaclar = [], [], []
+    if uzak_veri:
+        merkez_wayler = {e["id"] for e in veri["elements"] if e["type"] == "way"}
+        uzak_binalar, uzak_yollar, uzak_agaclar = uzak_veriyi_isle(
+            uzak_veri, d2, onemli_uzak, sil, merkez_wayler)
+        onemli.extend(onemli_uzak)
 
     # --- Ağaç havuzlarını birleştir (OSM önce, prosedürel sonra) + bütçe ---
     agaclar, agac_gorulen = [], set()
@@ -816,6 +973,46 @@ def main():
           f"{len(otoparklar)} otopark, {len(duraklar)} durak, {len(raylar)} ray, "
           f"{len(elle['girisler'])} giris, {len(elle['bayraklar'])} bayrak "
           f"— {cboyut/1024:.0f} KB")
+
+    # --- bolgeler.js: uzak bölgeler (Maltepe, Gar) + koridor ---
+    u = []
+    u.append("// ** BU DOSYA araclar/kampus_verisi.py ILE OTOMATIK URETILMISTIR **")
+    u.append("// Uzak bolgeler (Maltepe/Muhendislik + Ankara Gari) ve ana kampusten")
+    u.append("// oraya uzanan Celal Bayar koridoru. binalar.js'ten ayri tutulur;")
+    u.append("// dosya yoksa uygulama cokmez. Koordinat: x=dogu(+), z=guney(+), metre.")
+    u.append("")
+    u.append("// [duzpoligon, yukseklik, osmWay]")
+    u.append("const UZAK_BINALAR = [")
+    for duz, yuk, oid in uzak_binalar:
+        u.append(f"  [{json.dumps(duz)}, {yuk}, {oid}],")
+    u.append("];")
+    u.append("")
+    u.append("// [duzpoligon, genislik, tip]")
+    u.append("const UZAK_YOLLAR = [")
+    for duz, gen, tip in uzak_yollar:
+        u.append(f"  [{json.dumps(duz)}, {gen}, {json.dumps(tip)}],")
+    u.append("];")
+    u.append("")
+    u.append("// [x, z, tip]")
+    u.append("const UZAK_AGACLAR = [")
+    for x, z, tip in uzak_agaclar:
+        u.append(f"  [{x}, {z}, {tip}],")
+    u.append("];")
+    u.append("")
+    u.append("// Işınlanma noktaları: { isim, merkez:[x,z], bakis (derece), irtifa }")
+    u.append("const BOLGELER = [")
+    u.append('  { isim: "Ana Kampüs", merkez: [15, 639], bakis: 0, irtifa: 60 },')
+    for ad, lat, lon, _r in UZAK_BOLGELER:
+        x, z = d2.xy(lat, lon)
+        u.append(f"  {{ isim: {json.dumps(ad, ensure_ascii=False)}, "
+                 f"merkez: [{x}, {z}], bakis: {bakis_hesapla(x, z)}, irtifa: 90 }},")
+    u.append("];")
+    u.append("")
+    with open("bolgeler.js", "w", encoding="utf-8") as f:
+        f.write("\n".join(u))
+    uboyut = os.path.getsize("bolgeler.js")
+    print(f"bolgeler.js yazildi: {len(uzak_binalar)} uzak bina, {len(uzak_yollar)} yol, "
+          f"{len(uzak_agaclar)} agac, {len(UZAK_BOLGELER) + 1} bolge — {uboyut/1024:.0f} KB")
 
 if __name__ == "__main__":
     main()
