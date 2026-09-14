@@ -84,6 +84,9 @@
     <label class="cek">Yoğunluk <input id="dznYog" type="number" min="0" max="1" step="0.05" style="width:54px"></label>
   </div>
   <div class="satir">
+    <label class="cek"><input type="checkbox" id="dznCarpisma" checked> Çarpışma açık</label>
+  </div>
+  <div class="satir">
     <button id="dznUygula" class="ikincil">Uygula</button>
     <button id="dznKoseEkle" class="ikincil">Köşe Ekle</button>
     <button id="dznKoseSil" class="ikincil">Köşe Sil</button>
@@ -133,6 +136,7 @@ const DURAK_L = (typeof DURAKLAR === 'undefined') ? [] : DURAKLAR;
 const RAY_L = (typeof RAYLAR === 'undefined') ? [] : RAYLAR;
 const GIRIS_L = (typeof GIRISLER === 'undefined') ? [] : GIRISLER;
 const BAYRAK_L = (typeof BAYRAKLAR === 'undefined') ? [] : BAYRAKLAR;
+const CARPISMA_YOK_L = (typeof CARPISMA_YOK === 'undefined') ? [] : CARPISMA_YOK;
 
 // ===== AYARLAR ================================================================
 const HIZ_MS          = 25;      // uçağın sabit ileri hızı (m/s)
@@ -931,6 +935,129 @@ for (const b of ONEMLI_L) {
   onemliEkle(b);
 }
 
+// --CARPISMA-BASLA-- (test/ayikla.mjs okur; imzayı bozma)
+// Nokta poligon içinde mi (ışın atma yöntemi)
+function polIcinde(x, z, pol) {
+  let ic = false;
+  for (let i = 0; i < pol.length; i++) {
+    const x1 = pol[i][0], z1 = pol[i][1];
+    const x2 = pol[(i + 1) % pol.length][0], z2 = pol[(i + 1) % pol.length][1];
+    if ((z1 > z) !== (z2 > z) && x < ((x2 - x1) * (z - z1)) / (z2 - z1) + x1) ic = !ic;
+  }
+  return ic;
+}
+// Noktanın poligon kenarına en kısa mesafesi (m)
+function polKenarMesafe(x, z, pol) {
+  let en = Infinity;
+  for (let i = 0; i < pol.length; i++) {
+    const x1 = pol[i][0], z1 = pol[i][1];
+    const x2 = pol[(i + 1) % pol.length][0], z2 = pol[(i + 1) % pol.length][1];
+    const dx = x2 - x1, dz = z2 - z1;
+    const L2 = dx * dx + dz * dz;
+    const t = L2 === 0 ? 0 : Math.max(0, Math.min(1, ((x - x1) * dx + (z - z1) * dz) / L2));
+    const d = Math.hypot(x - (x1 + t * dx), z - (z1 + t * dz));
+    if (d < en) en = d;
+  }
+  return en;
+}
+// Bina + ağaç listelerinde çarpışma var mı? kapali=true kayıtlar yok sayılır.
+function carpismaTesti(binalar, agaclar, x, z, y, r) {
+  for (const b of binalar) {
+    if (b.kapali || y > b.yukseklik + 0.6) continue;
+    if (x < b.bbox[0] - r || x > b.bbox[1] + r ||
+        z < b.bbox[2] - r || z > b.bbox[3] + r) continue;
+    if (polIcinde(x, z, b.pol) || polKenarMesafe(x, z, b.pol) < r) return true;
+  }
+  for (const a of agaclar) {
+    if (y > a.yukseklik) continue;
+    const dx = x - a.x, dz = z - a.z;
+    const menzil = a.yaricap + r;
+    if (dx * dx + dz * dz < menzil * menzil) return true;
+  }
+  return false;
+}
+// --CARPISMA-BIT--
+
+// ===== ÇARPIŞMA IZGARASI (32 m hücre; bina poligonları + ağaç silindirleri) ==
+const CARPISMA_HUCRE = 32;
+const CARPISMA_YOK_SET = new Set(CARPISMA_YOK_L);
+const arkaDonusen = new Set();          // Edit 2.0 ile bireyselleştirilen arka plan indeksleri
+let carpismaGrid = new Map();
+let carpismaBinalar = [], carpismaGenel = [], carpismaAgaclar = [];
+let carpismaAcik = true;                // Ayarlar > Çarpışma
+let agacCarpisma = true;                // Ayarlar > Ağaçlara çarpma
+let sonCarpismaMs = -1e9;
+function carpismaEkle(kayit) {
+  carpismaBinalar.push(kayit);
+  const [x1, x2, z1, z2] = kayit.bbox;
+  const c0x = Math.floor(x1 / CARPISMA_HUCRE), c1x = Math.floor(x2 / CARPISMA_HUCRE);
+  const c0z = Math.floor(z1 / CARPISMA_HUCRE), c1z = Math.floor(z2 / CARPISMA_HUCRE);
+  if ((c1x - c0x + 1) * (c1z - c0z + 1) > 64) {   // çok büyük bina: her sorguda bak
+    kayit.genel = true;
+    carpismaGenel.push(kayit);
+    return;
+  }
+  for (let cx = c0x; cx <= c1x; cx++) {
+    for (let cz = c0z; cz <= c1z; cz++) {
+      const k = cx + ':' + cz;
+      let liste = carpismaGrid.get(k);
+      if (!liste) { liste = []; carpismaGrid.set(k, liste); }
+      liste.push(kayit);
+    }
+  }
+}
+function carpismaKutular(x, z, r) {
+  const liste = [];
+  const c0x = Math.floor((x - r) / CARPISMA_HUCRE), c1x = Math.floor((x + r) / CARPISMA_HUCRE);
+  const c0z = Math.floor((z - r) / CARPISMA_HUCRE), c1z = Math.floor((z + r) / CARPISMA_HUCRE);
+  for (let cx = c0x; cx <= c1x; cx++) {
+    for (let cz = c0z; cz <= c1z; cz++) {
+      const l = carpismaGrid.get(cx + ':' + cz);
+      if (l) for (const k of l) liste.push(k);
+    }
+  }
+  return liste;
+}
+function carpismaKur() {
+  carpismaGrid = new Map();
+  carpismaBinalar = [];
+  carpismaGenel = [];
+  const ekle = (pol, yuk, kapali) => {
+    if (!pol || pol.length < 3) return;
+    const xs = pol.map(p => p[0]), zs = pol.map(p => p[1]);
+    carpismaEkle({ pol, yukseklik: yuk, kapali,
+                   bbox: [Math.min(...xs), Math.max(...xs), Math.min(...zs), Math.max(...zs)] });
+  };
+  for (const kayit of onemliListesi) {
+    const b = kayit.bina;
+    ekle(b.taban, b.yukseklik, b.carpisma === false);
+  }
+  for (let i = 0; i < ARKA_L.length; i++) {
+    if (arkaDonusen.has(i)) continue;    // bireysel mesh olarak onemliListesi'nde
+    const [duz, yuk, oid] = ARKA_L[i];
+    if (CARPISMA_YOK_SET.has(oid)) continue;
+    const pol = [];
+    for (let k = 0; k < duz.length; k += 2) pol.push([duz[k], duz[k + 1]]);
+    ekle(pol, yuk, false);
+  }
+  // Ağaç silindirleri: render'daki deterministik boyut formülünün aynısı
+  carpismaAgaclar = AGAC_L.map(([x, z, tipHam]) => {
+    const tip = Math.min(2, Math.abs(tipHam | 0));
+    const r1 = Math.abs(Math.sin(x * 12.9898 + z * 78.233) * 43758.5453) % 1;
+    const r2 = Math.abs(Math.sin(x * 39.346 + z * 11.135) * 24634.6345) % 1;
+    const h = 1.5 + r1 * 1.6 + tip * 0.3;
+    const r = 1.0 + r2 * 1.0 + (tip === 1 ? 0.5 : 0);
+    return { x, z, yukseklik: h + r * 0.7, yaricap: Math.max(0.5, r * 0.75) };
+  });
+}
+carpismaKur();
+function carpismaVar(x, z, y, r) {
+  if (!carpismaAcik) return false;
+  const adaylar = carpismaKutular(x, z, r);
+  for (const g of carpismaGenel) adaylar.push(g);
+  return carpismaTesti(adaylar, agacCarpisma ? carpismaAgaclar : [], x, z, y, r);
+}
+
 // ===== EJDERHA MODELİ (burun -Z'ye dönük; grup adı uçuş koduyla aynı) ========
 const ucak = new THREE.Group();
 const govdeGrubu = new THREE.Group();   // süzülme/sallanma animasyonu için iç grup
@@ -1140,12 +1267,14 @@ function durumGuncelle(ek) {
     ? ` | <b>Veri:</b> ${veriOrani()} satır/s • son ${Math.max(0, performance.now() - sonVeriMs).toFixed(0)}ms önce • son: ${sonSatir}`
     : ` | <b>Veri:</b> yok`;
   const pilRenk = pil.mv > 0 && pil.mv < 3400 ? '#ff6b6b' : '#e8eaed';
+  const carpismaUyari = (performance.now() - sonCarpismaMs < 1000)
+    ? ' | <span style="color:#ff6b6b"><b>ÇARPIŞMA!</b></span>' : '';
   d0.innerHTML =
     `<b>Kaynak:</b> ${knAdi} | <b>Pitch:</b> ${ham.pitch.toFixed(1)}° | ` +
     `<b>Roll:</b> ${ham.roll.toFixed(1)}° | <b>İrtifa:</b> ${konum.y.toFixed(0)} m | ` +
     `<b>Hız:</b> ${HIZ_MS} m/s | <b>Kamera:</b> ${kn} | ` +
     `<b>Pil:</b> <span style="color:${pilRenk}">${pilMetni()}</span>` +
-    `${veriBilgi}` + (ek ? ` | ${ek}` : '');
+    `${carpismaUyari}${veriBilgi}` + (ek ? ` | ${ek}` : '');
 }
 
 // --- Web Serial (Chrome/Edge) ---
@@ -1321,6 +1450,7 @@ const dznKat = document.getElementById('dznKat');
 const dznRenk = document.getElementById('dznRenk');
 const dznKolon = document.getElementById('dznKolon');
 const dznYog = document.getElementById('dznYog');
+const dznCarpisma = document.getElementById('dznCarpisma');
 const dznCikti = document.getElementById('dznCikti');
 let duzenleModu = false;
 const secim = { entry: null, arkaKaynak: false, kose: -1 };
@@ -1374,7 +1504,7 @@ function panelDoldur() {
     ? `${secim.arkaKaynak ? 'Arka plan → düzenlenebilir' : 'Önemli bina'} | ${b.taban.length} köşe` +
       (b.osmWay ? ` | OSM way ${b.osmWay}` : '')
     : 'Bina seçilmedi.';
-  for (const el of [dznIsim, dznYuk, dznKat, dznRenk, dznKolon, dznYog]) el.disabled = !b;
+  for (const el of [dznIsim, dznYuk, dznKat, dznRenk, dznKolon, dznYog, dznCarpisma]) el.disabled = !b;
   if (!b) return;
   dznIsim.value = b.isim || '';
   dznYuk.value = b.yukseklik;
@@ -1383,6 +1513,7 @@ function panelDoldur() {
   const pa = pencereAyar(b);
   dznKolon.value = pa ? pa.kolonAralik : 1.6;
   dznYog.value = pa ? pa.yogunluk : 0.85;
+  dznCarpisma.checked = b.carpisma !== false;
 }
 function secimAyarla(entry, arkaKaynak) {
   secim.entry = entry;
@@ -1415,19 +1546,22 @@ function binaSec(hit) {
     const taban = [];
     for (let i = 0; i < duz.length; i += 2) taban.push([duz[i], duz[i + 1]]);
     const renk = obj.userData.renk ?? ARKA_RENKLERI[0];
-    arkaKur(idx);   // bu binayı kovadan çıkar (bireysel mesh olarak eklenecek)
+    arkaDonusen.add(idx);   // çarpışma ızgarasında kovadan sayılmasın
+    arkaKur(idx);           // bu binayı kovadan çıkar (bireysel mesh olarak eklenecek)
     const entry = onemliEkle({
       isim: 'Bina' + (osmWay ? ' ' + osmWay : ''), taban, yukseklik: yuk,
       kat: Math.max(1, Math.round(yuk / 6)), renk, osmWay,
     });
     entry.arkaKaynak = true;
     entry.duzenlendi = true;
+    carpismaKur();
     secimAyarla(entry, true);
   }
 }
 function geometriGuncelle() {
   if (!secim.entry) return;
   const yeniG = binaGeometrisi(secim.entry.bina.taban, secim.entry.bina.yukseklik);
+  carpismaKur();
   secim.entry.mesh.geometry.dispose();
   secim.entry.mesh.geometry = yeniG;
   handleKur();
@@ -1464,7 +1598,7 @@ addEventListener('pointermove', (e) => {
   secimKutuGuncelle();
 });
 addEventListener('pointerup', () => {
-  if (surukle >= 0) { surukle = -1; panelDoldur(); }
+  if (surukle >= 0) { surukle = -1; carpismaKur(); panelDoldur(); }
 });
 document.getElementById('dznUygula').onclick = () => {
   if (!secim.entry) return;
@@ -1476,7 +1610,10 @@ document.getElementById('dznUygula').onclick = () => {
   b.pencere = { ...(b.pencere || {}),
     kolonAralik: Number(dznKolon.value) || 1.6,
     yogunluk: Math.max(0, Math.min(1, Number(dznYog.value) || 0.85)) };
+  if (dznCarpisma.checked) delete b.carpisma;
+  else b.carpisma = false;
   onemliMeshGuncelle(secim.entry);
+  carpismaKur();
   secimKutuGuncelle();
   panelDoldur();
 };
@@ -1512,6 +1649,7 @@ document.getElementById('dznJson').onclick = () => {
     renk: '0x' + new THREE.Color(b.renk ?? 0xcdbfa3).getHexString(),
   };
   if (b.pencere) kayit.pencere = b.pencere;
+  if (b.carpisma === false) kayit.carpisma = false;
   if (b.osmWay) kayit.osmWay = b.osmWay;
   dznCikti.textContent = '// elle_veri.json > "binalar" listesine ekle:\n' +
     JSON.stringify(kayit, null, 2) + ',';
@@ -1598,8 +1736,19 @@ function dongu() {
   yaw -= THREE.MathUtils.degToRad(rollEtkili) * DONUS_KAZANCI * dt;
   const dikeyHiz = pitchEtkili * TIRMANIS_KAZANCI;
   const ileri = new THREE.Vector3(-Math.sin(yaw), 0, -Math.cos(yaw));
-  konum.addScaledVector(ileri, HIZ_MS * dt);
-  konum.y = Math.max(0.8, konum.y + dikeyHiz * dt);
+  const yeniY = Math.max(0.8, konum.y + dikeyHiz * dt);
+  // Çarpışmalı ilerleme: kaydırmalı (önce tam adım, sonra x/z ayrı ayrı)
+  const yaricap = 2.5;
+  const adimYol = HIZ_MS * dt;
+  const hedefX = konum.x + ileri.x * adimYol, hedefZ = konum.z + ileri.z * adimYol;
+  if (!carpismaVar(hedefX, hedefZ, yeniY, yaricap)) {
+    konum.x = hedefX; konum.z = hedefZ;
+  } else {
+    if (!carpismaVar(hedefX, konum.z, yeniY, yaricap)) konum.x = hedefX;
+    else if (!carpismaVar(konum.x, hedefZ, yeniY, yaricap)) konum.z = hedefZ;
+    sonCarpismaMs = performance.now();
+  }
+  konum.y = yeniY;
   // kampüs sınırı
   const yatay = Math.hypot(konum.x, konum.z);
   if (yatay > SINIR_YARICAP) {

@@ -317,7 +317,7 @@ def elle_veriyi_yukle():
     """Elle düzenlemelerin tek kaynağı; üretim bunları korur. Eksik dosya hata değil."""
     bos = {"binalar": [], "sil": [], "sira": [], "renkler": {}, "pencereler": {},
            "parklar": [], "fiskiyeler": [], "yollar": [], "poiler": [], "agaclar": [],
-           "girisler": [], "bayraklar": []}
+           "girisler": [], "bayraklar": [], "carpismaYok": []}
     if not os.path.exists(ELLE_VERI):
         print(f"  UYARI: {ELLE_VERI} yok; elle düzenlemeler uygulanmayacak.")
         return bos
@@ -348,6 +348,11 @@ def main():
     veri = osm_verisi_edin("--onbellek" in sys.argv[1:])
     elle = elle_veriyi_yukle()
     sil = {int(x) for x in elle["sil"]}
+    # Çarpışması kapatılacak OSM binaları (cevre/binalar tarafında Set olarak kullanılır)
+    carpisma_yok = {int(x) for x in elle["carpismaYok"]}
+    for b in elle["binalar"]:
+        if b.get("carpisma") is False and b.get("osmWay"):
+            carpisma_yok.add(int(b["osmWay"]))
     # Elle binada osmWay verilmişse OSM kopyası çizilmesin (elle sürüm geçerlidir)
     for b in elle["binalar"]:
         if b.get("osmWay"):
@@ -652,6 +657,8 @@ def main():
             renk = PALET[i % len(PALET)]
         taban_js = json.dumps([[x, z] for x, z in b["taban"]])
         pencere = b.get("pencere") or elle["pencereler"].get(b["isim"])
+        carpisma_kapali = (b.get("carpisma") is False or
+                           (b.get("osmWay") and int(b["osmWay"]) in carpisma_yok))
         s.append("  {")
         s.append(f"    isim: {json.dumps(b['isim'], ensure_ascii=False)},")
         s.append(f"    taban: {taban_js},")
@@ -662,6 +669,8 @@ def main():
         s.append("    catRengi: 0x6e6e6e,")
         if pencere:
             s.append(f"    pencere: {json.dumps(pencere, ensure_ascii=False)},")
+        if carpisma_kapali:
+            s.append("    carpisma: false,")
         s.append(f"    detay: {{ katsayisi: {b['kat']} }}")
         s.append("  },")
     s.append("];")
@@ -728,6 +737,9 @@ def main():
     for duz, yuk, oid in arka_plan:
         s.append(f"  [{json.dumps(duz)}, {yuk}, {oid}],")
     s.append("];")
+    s.append("")
+    s.append("// Çarpışmadan muaf OSM way id'leri (elle_veri.json > carpismaYok)")
+    s.append("const CARPISMA_YOK = [" + ", ".join(str(i) for i in sorted(carpisma_yok)) + "];")
     s.append("")
 
     with open("binalar.js", "w", encoding="utf-8") as f:

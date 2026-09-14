@@ -1526,3 +1526,6 @@ const ARKA_PLAN_BINALAR = [
   [[-689.2, 110.4, -683.2, 131.0, -665.6, 125.9, -669.9, 104.8], 18, 1502516310],
   [[-589.3, 165.9, -596.5, 151.0, -587.4, 146.6, -580.2, 161.5], 12, 1554352150],
 ];
+
+// Çarpışmadan muaf OSM way id'leri (elle_veri.json > carpismaYok)
+const CARPISMA_YOK = [];

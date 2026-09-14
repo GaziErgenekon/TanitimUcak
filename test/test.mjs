@@ -192,6 +192,46 @@ test('binalar.js ve cevre.js verileri geçerli', () => {
   }
 });
 
+// --- çarpışma matematiği -----------------------------------------------------
+function carpismaSandbox() {
+  const ctx = { Math, Infinity };
+  vm.createContext(ctx);
+  vm.runInContext(blok('CARPISMA') +
+    '\n;globalThis.__c = { polIcinde, polKenarMesafe, carpismaTesti };\n', ctx);
+  return ctx.__c;
+}
+
+test('polIcinde ve polKenarMesafe temel geometri', () => {
+  const c = carpismaSandbox();
+  const kare = [[0, 0], [10, 0], [10, 10], [0, 10]];
+  assert.equal(c.polIcinde(5, 5, kare), true);
+  assert.equal(c.polIcinde(15, 5, kare), false);
+  assert.equal(c.polIcinde(-1, -1, kare), false);
+  assert.ok(Math.abs(c.polKenarMesafe(5, 5, kare) - 5) < 1e-9);
+  assert.ok(Math.abs(c.polKenarMesafe(12, 5, kare) - 2) < 1e-9);
+});
+
+test('carpismaTesti: bina yüksekliği, yarıçap ve kapalı bina', () => {
+  const c = carpismaSandbox();
+  const bina = [{ pol: [[0, 0], [10, 0], [10, 10], [0, 10]], yukseklik: 12,
+    kapali: false, bbox: [0, 10, 0, 10] }];
+  assert.equal(c.carpismaTesti(bina, [], 5, 5, 3, 2), true, 'içinde ve altta');
+  assert.equal(c.carpismaTesti(bina, [], 5, 5, 13, 2), false, 'üstünde serbest');
+  assert.equal(c.carpismaTesti(bina, [], 11.5, 5, 3, 2), true, 'duvara 1.5 m (yarıçap içi)');
+  assert.equal(c.carpismaTesti(bina, [], 12, 5, 3, 2), false, 'tam temas sınırı serbest');
+  assert.equal(c.carpismaTesti(bina, [], 15, 5, 3, 2), false, 'uzakta serbest');
+  const kapali = [{ ...bina[0], kapali: true }];
+  assert.equal(c.carpismaTesti(kapali, [], 5, 5, 3, 2), false, 'kapalı bina yok sayılır');
+});
+
+test('carpismaTesti: ağaç silindiri', () => {
+  const c = carpismaSandbox();
+  const agac = [{ x: 0, z: 0, yukseklik: 4, yaricap: 1 }];
+  assert.equal(c.carpismaTesti([], agac, 0, 1, 2, 0.5), true, 'gövdeye değer');
+  assert.equal(c.carpismaTesti([], agac, 0, 3, 2, 0.5), false, 'menzil dışı');
+  assert.equal(c.carpismaTesti([], agac, 0, 0.5, 5, 0.5), false, 'üstünden geçer');
+});
+
 // --- geometri (three varsa) ---------------------------------------------------
 const THREE = await threeYukle();
 

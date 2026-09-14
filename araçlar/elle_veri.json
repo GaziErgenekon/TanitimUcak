@@ -338,6 +338,7 @@
   "yollar": [],
   "poiler": [],
   "agaclar": [],
+  "carpismaYok": [],
   "girisler": [
     {
       "_aciklama": "A Kapısı (Beşevler ana giriş): OSM 39.938276, 32.822154. aci = yola dik bariyer yönü (derece).",
