@@ -1183,6 +1183,13 @@ function carpismaKur() {
     for (let k = 0; k < duz.length; k += 2) pol.push([duz[k], duz[k + 1]]);
     ekle(pol, yuk, false);
   }
+  // Uzak bölge binaları da çarpışır (elle kapatma way id ile mümkün)
+  for (const [duz, yuk, oid] of UZAK_L) {
+    if (CARPISMA_YOK_SET.has(oid)) continue;
+    const pol = [];
+    for (let k = 0; k < duz.length; k += 2) pol.push([duz[k], duz[k + 1]]);
+    ekle(pol, yuk, false);
+  }
   // Ağaç silindirleri: render'daki deterministik boyut formülünün aynısı
   carpismaAgaclar = TUM_AGACLAR.map(([x, z, tipHam]) => {
     const tip = Math.min(2, Math.abs(tipHam | 0));

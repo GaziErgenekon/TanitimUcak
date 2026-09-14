@@ -7,9 +7,10 @@ gerçek OpenStreetMap geometrileri üzerinde uçulur. Arayüz Türkçe.
 Uzak repo: https://github.com/GaziErgenekon/TanitimUcak
 
 ## Dosya Yapısı
-- `index.html` — Tek dosya uygulama: Three.js sahnesi, ejderha modeli, uçuş dinamiği,
-  kameralar (takip/kokpit/gezin), HUD, veri kaynakları, **Düzenleme Modu 2.0**.
-  `binalar.js` + `cevre.js` globallerini okur (ikisi de yoksa çökmez).
+- `index.html` — Tek dosya uygulama: Three.js sahnesi, **3 skin** (ejderha/uçak/kurt),
+  uçuş dinamiği, kameralar (takip/kokpit/gezin), HUD, **çarpışma**, veri kaynakları,
+  **Ayarlar drawer'ı**, **Düzenleme Modu 2.0**. `binalar.js` + `cevre.js` +
+  `bolgeler.js` globallerini okur (üçü de yoksa çökmez).
   Başlangıç: Teknoloji Fakültesi üstü (15, 40, 639), kuzeye bakış.
 - `binalar.js` — ÜRETİLİR (`araçlar/kampus_verisi.py`):
   - `ONEMLI_BINALAR`: isimli binalar. Alanlar: isim, taban, yukseklik, `osmWay`,
@@ -20,15 +21,24 @@ Uzak repo: https://github.com/GaziErgenekon/TanitimUcak
     living/primary/motorway/steps/cycleway/track.
 - `cevre.js` — ÜRETİLİR, opsiyonel katmanlar:
   - `AGACLAR` [x,z,tip], `ISLETMELER` [x,z,tip,isim], `OTOPARKLAR` [duzpoligon],
-    `DURAKLAR` [x,z,tip,isim], `RAYLAR` [duzpoligon,tip].
+    `DURAKLAR` [x,z,tip,isim], `RAYLAR` [duzpoligon,tip],
+    `GIRISLER` {isim,merkez,aci,pano}, `BAYRAKLAR` {isim,merkez,tip,yukseklik}.
+- `bolgeler.js` — ÜRETİLİR, uzak bölgeler (opsiyonel katman):
+  `UZAK_BINALAR` [duz,yuk,way], `UZAK_YOLLAR` [duz,genislik,tip],
+  `UZAK_AGACLAR` [x,z,tip], `BOLGELER` {isim,merkez,bakis,irtifa} (ışınlanma).
+  Maltepe (Mühendislik) r=600 + Ankara Garı r=500 tam detay; ana kampüsten
+  Celal Bayar Bulvarı koridoru (around:170 bina / 120 yol) ile bağlanır.
 - `araçlar/elle_veri.json` — **ELLE DÜZENLEMELERİN TEK KAYNAĞI** (commitlenir):
   binalar (sabit poligonlar; `osmWay` verirsen OSM kopyası otomatik silinir),
   `sil` (yoksayılacak way id), `sira` (baştaki binalar), `renkler`, `pencereler`,
-  `parklar`, `fiskiyeler`, `yollar`, `poiler`, `agaclar`.
-- `araçlar/kampus_verisi.py` — binalar.js + cevre.js üretici (stdlib only;
-  3 Overpass ucu × GET/POST; `araçlar/osm_onbellek.json` önbelleği;
-  `--onbellek` ile ağsız üretim; `building:levels`/`height` (3-15 kat / 3-60 m
-  sınırıyla) yoksa alan tahmini; bina çakışması elle poligonlara göre ayıklanır).
+  `parklar`, `fiskiyeler`, `yollar`, `poiler`, `agaclar`, `girisler`, `bayraklar`,
+  `carpismaYok` (çarpışması kapatılacak way id'leri).
+  Bina kaydında `carpisma:false` o binada çarpışmayı kapatır.
+- `araçlar/kampus_verisi.py` — binalar.js + cevre.js + bolgeler.js üretici
+  (stdlib only; 3 Overpass ucu × GET/POST; `araçlar/osm_onbellek.json` önbelleği
+  `{merkez, uzak}`; `--onbellek` ile ağsız üretim; `building:levels`/`height`
+  (3-15 kat / 3-60 m sınırıyla) yoksa alan tahmini; bina çakışması elle
+  poligonlara göre ayıklanır; uzak sorgu merkez way id'lerini atlar).
 - `esp32_ucak_kumandasi/esp32_ucak_kumandasi.ino` — Lolin32 Lite firmware:
   MPU-6050 complementary filtre (50 Hz) + buton + **BLE (Nordic UART)** + batarya.
   USB seri ve BLE **aynı anda** basar. Butona >1.5 sn basmak BLE'yi aç/kapatır.
@@ -70,20 +80,35 @@ Uzak repo: https://github.com/GaziErgenekon/TanitimUcak
   ÇİZİLMEZ → duvar/çatı ayrı mesh. `arkaKur(haric)` yeniden kurar; her mesh'te
   `userData.araliklar` face→bina eşlemesi (düzenleme seçimi için).
 - **Ağaçlar:** instanced (1 gövde + 3 yaprak = 4 çizim); OSM `natural=tree/tree_row`
-  + park/orman içine prosedürel (bütçe 6000, kapsam 1400 m). POI'ler mesafeyle
-  sönen billboard sprite.
+  + park/orman içine prosedürel (merkez bütçe 9000, kapsam 1400 m) + uzak bölge
+  yol kenarı sıraları (bolgeler.js, 40 m aralık). POI ve etiketler mesafeyle söner
+  (etiket 900 m, POI 260 m).
 - **Düzenleme Modu 2.0 (E):** tıkla-seç (önemli + arka plan), köşe sürükle,
-  köşe ekle/sil, isim/yükseklik/kat/renk/pencere canlı önizleme, "JSON Kopyala"
-  (`elle_veri.json > binalar` kaydı üretir). Arka plan binası seçilince kovadan
-  çıkarılıp bireysel düzenlenebilir binaya dönüşür.
+  köşe ekle/sil, isim/yükseklik/kat/renk/pencere/**çarpışma** canlı önizleme,
+  "JSON Kopyala" (`elle_veri.json > binalar` kaydı üretir). Arka plan binası
+  seçilince kovadan çıkarılıp bireysel düzenlenebilir binaya dönüşür.
+- **Kapı/bayrak:** `GIRISLER` (A/C kapıları: sütun+pano+bariyer+kulübe; `aci` yola
+  dik) ve `BAYRAKLAR` (12 m direk + CPU'da dalgalanan kumaş). A Kapısı konumu
+  kullanıcı OSM linkinden: (141.2, 581.5); C Kapısı (376, 213).
+- **Çarpışma:** 32 m spatial grid; önemli + arka plan + uzak bina poligonları ve
+  ağaç silindirleri. Kaydırmalı ilerleme (tam adım → x/z ayrı); bina yüksekliği
+  üstü serbest. Bina başına `carpisma:false` / `CARPISMA_YOK`; Ayarlar'dan global
+  ve ağaç anahtarları. `--CARPISMA--` blok imzasını bozma.
+- **Modeller/skinler:** `MODEL_FABRIKASI` ejderha (Dişsiz esintili: siyah gövde,
+  yeşil göz, kırmızı kuyruk yüzgeci), uçak (dönen pervane, iniş takımı) ve kurt
+  (dört bacak koşu + kuyruk). Sözleşme: `{grup, yaricap, kamera, animasyon}`;
+  seçim localStorage (`gazi_skin`).
+- **Ayarlar drawer'ı (H/Esc):** sağ üstte; görünüm(skin), uçuş hızı (10-120 m/s,
+  `gazi_hiz`), konumlar (ışınlanma), çarpışma, kamera, klavye, katmanlar.
+  Sol üstte yalnız bağlantı butonları; HUD tek satır.
 - **Veri kaynakları:** Web Serial / Web Bluetooth / WebSocket. Ortak `satirIsle()`;
   BLE bildirimi satır bölebilir → tampon. Buton 1→0 kenar sönümlemesi: 3 ardışık
   aynı örnek + 500 ms refractory (`butonKenarIsle`).
 - **İşleme:** EMA α=0.15 + ±2° deadband + C kalibrasyon. `YURUT_*` işaret sabitleri.
-- **Uçuş:** 25 m/s; roll→yaw, pitch→irtifa; min 0.8 m; ±1300 m sınır.
+- **Uçuş:** 25 m/s (ayarlanır); roll→yaw, pitch→irtifa; min 0.8 m; ±3200 m sınır.
 - **Kameralar:** takip ↔ kokpit (buton/Enter) + gezin (G: WASD, oklar, Q/Z, +/-).
 - **Katman paneli:** Önemli/Etiket/Arka plan/Yol/Park/Spor/Fıskiye/Ağaç/
-  İşletme-Durak/Otopark/Raylı.
+  İşletme-Durak/Otopark/Raylı/Giriş-Bayrak/Uzak bölgeler.
 
 ## Çalıştırma
 ```bash
@@ -105,11 +130,14 @@ python3 -m http.server 8000
   yapıştır), sonra üret. Doğrudan binalar.js düzenlemek yeniden üretimde kaybolur.
 
 ## Testler
-- `node --check` (index.html modülü çıkartılarak, binalar.js, cevre.js).
+- `node --check` (index.html modülü çıkartılarak, binalar.js, cevre.js, bolgeler.js).
 - `node --test test/test.mjs`: pencere parametreleri/UV, buton sönümleme, CSV 3/4
-  alan, pil yüzdesi, veri geçerliliği (isim tekilliği, ±1400 m, way id), geometri
+  alan, pil yüzdesi, çarpışma matematiği (poligon içi/mesafe, yükseklik, ağaç),
+  kapı/bayrak ve bolgeler.js verisi (isim tekilliği, ±3200 m, way id), geometri
   (extrude yönü, grup 0=kapak/1=duvar, dilimle, merge) — three varsa
   (`npm --prefix /tmp/opencode/geo i three@0.160.0`; yoksa geometri atlanır).
+- Üretim determinist: `python3 araçlar/kampus_verisi.py --onbellek` iki kez
+  çalıştırıldığında dosyalar bit bit aynı olmalı.
 - `python3 -m py_compile seri_kopru.py bt_kopru.py araçlar/kampus_verisi.py`.
 - Firefox headless duman testi: `python3 -m http.server` + `firefox --headless
   --screenshot` (WebGL yazılım render ile sahne görünür).

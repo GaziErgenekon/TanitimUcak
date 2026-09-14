@@ -7,7 +7,10 @@
     "sira      : ONEMLI listesinin basinda duracak bina isimleri (verilen sirayla).",
     "renkler   : OSM den gelen binalar icin isim -> renk sabitlemesi (0xRRGGBB).",
     "pencereler: isim -> pencere ayari (binalar.js e aynen yazilir).",
-    "parklar / fiskiyeler / yollar / poiler / agaclar: OSM de cikmayan elle eklenenler."
+    "parklar / fiskiyeler / yollar / poiler / agaclar: OSM de cikmayan elle eklenenler.",
+    "girisler  : A/C kapi noktalari (merkez, aci derece, pano yazisi).",
+    "bayraklar : direk noktalari (merkez, tip, yukseklik).",
+    "carpismaYok: carpismasi kapatilacak OSM way id leri."
   ],
   "sil": [
     418594116
