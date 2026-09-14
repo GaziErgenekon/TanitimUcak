@@ -1,0 +1,341 @@
+{
+  "_aciklama": [
+    "Elle duzenlemelerin TEK kaynagi. kampus_verisi.py uretim sirasinda bunu okur;",
+    "binalar.js yeniden uretilse bile bu kayitlar korunur.",
+    "binalar   : OSM disi / sabit binalar (taban, yukseklik, kat, renk, opsiyonel pencere).",
+    "sil       : yoksayilacak OSM way id leri (hayalet/cakisan bina).",
+    "sira      : ONEMLI listesinin basinda duracak bina isimleri (verilen sirayla).",
+    "renkler   : OSM den gelen binalar icin isim -> renk sabitlemesi (0xRRGGBB).",
+    "pencereler: isim -> pencere ayari (binalar.js e aynen yazilir).",
+    "parklar / fiskiyeler / yollar / poiler / agaclar: OSM de cikmayan elle eklenenler."
+  ],
+  "sil": [
+    418594116
+  ],
+  "sira": [
+    "Taşkent Binası",
+    "Teknoloji Fakültesi Dekanlığı"
+  ],
+  "binalar": [
+    {
+      "isim": "Taşkent Binası",
+      "taban": [
+        [
+          -48.9,
+          529.1
+        ],
+        [
+          -48,
+          530.4
+        ],
+        [
+          -79.3,
+          553.4
+        ],
+        [
+          -88,
+          541.5
+        ],
+        [
+          -56.6,
+          518.7
+        ]
+      ],
+      "yukseklik": 18,
+      "kat": 3,
+      "renk": "0xc2b6a3"
+    },
+    {
+      "isim": "Teknoloji Fakültesi Dekanlığı",
+      "taban": [
+        [
+          -25.3,
+          493.8
+        ],
+        [
+          -24.4,
+          495
+        ],
+        [
+          -15.8,
+          488.7
+        ],
+        [
+          -16.7,
+          487.5
+        ],
+        [
+          -10.5,
+          483
+        ],
+        [
+          -9.6,
+          484.2
+        ],
+        [
+          1.5,
+          476.1
+        ],
+        [
+          9.3,
+          486.9
+        ],
+        [
+          -48.5,
+          529
+        ],
+        [
+          -56.4,
+          518.3
+        ],
+        [
+          -45.3,
+          510.2
+        ],
+        [
+          -46.2,
+          509
+        ],
+        [
+          -40.1,
+          504.5
+        ],
+        [
+          -39.2,
+          505.7
+        ],
+        [
+          -30.5,
+          499.4
+        ],
+        [
+          -31.4,
+          498.2
+        ]
+      ],
+      "yukseklik": 18,
+      "kat": 3,
+      "renk": "0xc2b6a3"
+    },
+    {
+      "isim": "Rektörlük",
+      "taban": [
+        [
+          154.2,
+          452.3
+        ],
+        [
+          157.1,
+          450.2
+        ],
+        [
+          160.1,
+          454.3
+        ],
+        [
+          151.5,
+          460.6
+        ],
+        [
+          153.4,
+          463.2
+        ],
+        [
+          162,
+          456.9
+        ],
+        [
+          165.6,
+          461.8
+        ],
+        [
+          152.6,
+          471.3
+        ],
+        [
+          147.1,
+          463.8
+        ],
+        [
+          144.5,
+          465.7
+        ],
+        [
+          150.1,
+          473.3
+        ],
+        [
+          136.3,
+          483.3
+        ],
+        [
+          127.7,
+          471.6
+        ],
+        [
+          139.6,
+          462.9
+        ],
+        [
+          132.6,
+          453.3
+        ],
+        [
+          125.3,
+          458.6
+        ],
+        [
+          121.6,
+          453.6
+        ],
+        [
+          128.9,
+          448.3
+        ],
+        [
+          121.9,
+          438.7
+        ],
+        [
+          110,
+          447.4
+        ],
+        [
+          101.4,
+          435.7
+        ],
+        [
+          115.2,
+          425.6
+        ],
+        [
+          120.8,
+          433.2
+        ],
+        [
+          123.4,
+          431.3
+        ],
+        [
+          117.8,
+          423.7
+        ],
+        [
+          130.8,
+          414.2
+        ],
+        [
+          134.4,
+          419.1
+        ],
+        [
+          125.8,
+          425.4
+        ],
+        [
+          127.7,
+          428.1
+        ],
+        [
+          136.4,
+          421.8
+        ],
+        [
+          139.4,
+          425.9
+        ],
+        [
+          136.4,
+          428.1
+        ]
+      ],
+      "yukseklik": 24,
+      "kat": 4,
+      "renk": "0xd0b49a"
+    }
+  ],
+  "renkler": {
+    "Taşkent Binası": "0xc2b6a3",
+    "Teknoloji Fakültesi Dekanlığı": "0xc2b6a3",
+    "Türk Patent Enstitüsü": "0xd8c9a8",
+    "Fen Fakültesi": "0xcfc4b0",
+    "Türkiye Voleybol Federasyonu": "0xb8a98c",
+    "Gazi Üniversitesi Yüzme Havuzu": "0xc9bdbd",
+    "Eğitim Fakültesi Hersek Binası": "0xb5c2c9",
+    "Teknoloji Fakültesi": "0xd0b49a",
+    "Bilgi İşlem": "0xc2b6a3",
+    "Ankara Üniversitesi Diş Hekimliği Fakültesi": "0xadb8c4",
+    "Mevlana Camii": "0xcabfb2",
+    "Gazi Üniversitesi Merkez Kütüphanesi": "0xb0a896",
+    "Eğitim Fakültesi Bosna Binası": "0xd8c9a8",
+    "MEB Şura Salonu": "0xcfc4b0",
+    "Şevket Aziz Kansu Binası": "0xb8a98c",
+    "C Blok Kolektif Ofisler": "0xc9bdbd",
+    "Hipodrom Tren İstasyonu": "0xb5c2c9",
+    "Rektörlük": "0xd0b49a",
+    "Hakimler ve Savcılar Yüksek Kurulu": "0xc2b6a3",
+    "Eğitim Fakültesi F Blok": "0xadb8c4",
+    "Gazi Üniversitesi Spor Bilimleri Fakültesi": "0xcabfb2",
+    "Ankara İl Milli Eğitim Müdürlüğü": "0xb0a896",
+    "Gazi Mahallesi Tren İstasyonu": "0xd8c9a8",
+    "Ankara TVF Spor Lisesi": "0xcfc4b0",
+    "Camii": "0xb8a98c",
+    "Gazi Kültür Merkezi": "0xc9bdbd",
+    "İHL Hacı Durali Akan Camii": "0xb5c2c9",
+    "Diş Hekimliği Fakültesi": "0xd0b49a",
+    "Mitat Genç Görme Engelliler Orta Okulu": "0xc2b6a3",
+    "Maison Coffee Company": "0xadb8c4",
+    "Barış Apartmanı": "0xcabfb2",
+    "Büyük Birlik Partisi Genel Merkezi": "0xb0a896",
+    "Halıcıoğlu Market": "0xd8c9a8",
+    "USARE BÜFE": "0xcfc4b0"
+  },
+  "pencereler": {
+    "Rektörlük": {
+      "yogunluk": 0.8
+    }
+  },
+  "parklar": [
+    {
+      "isim": "Rektörlük Parkı",
+      "tip": "park",
+      "taban": [
+        [
+          163,
+          351
+        ],
+        [
+          273,
+          401
+        ],
+        [
+          208,
+          451
+        ],
+        [
+          93,
+          401
+        ],
+        [
+          163,
+          351
+        ]
+      ]
+    }
+  ],
+  "fiskiyeler": [
+    {
+      "isim": "Rektörlük Fıskiyesi",
+      "merkez": [
+        212,
+        378
+      ],
+      "yaricap": 3,
+      "sekil": "kare",
+      "boyut": 18
+    }
+  ],
+  "yollar": [],
+  "poiler": [],
+  "agaclar": []
+}

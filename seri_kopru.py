@@ -9,19 +9,31 @@ Kurulum (bir kez, iki yöntem):
 Çalıştırma:
     .venv/bin/python seri_kopru.py                 # yöntem a
     PYTHONPATH=libs python3 seri_kopru.py          # yöntem b
-    (varsayılan port /dev/ttyUSB0, başka port: ".../python seri_kopru.py /dev/ttyUSB1")
+    (port otomatik bulunur: /dev/ttyUSB* veya /dev/ttyACM*;
+     özel port: ".../python seri_kopru.py /dev/ttyUSB1")
 
 Tarayıcıda "WebSocket ile Bağlan" düğmesi ws://localhost:8765'e bağlanır.
 Seri satırlar (pitch,roll,butonState) olduğu gibi iletilir.
 """
 
 import asyncio
+import glob
 import sys
 
 import serial
 import websockets
 
-SERI_PORT = sys.argv[1] if len(sys.argv) > 1 else "/dev/ttyUSB0"
+
+def port_bul():
+    """Argüman verilmediyse ilk USB seri portu bul (ttyUSB*, ttyACM*)."""
+    for desen in ("/dev/ttyUSB*", "/dev/ttyACM*"):
+        adaylar = sorted(glob.glob(desen))
+        if adaylar:
+            return adaylar[0]
+    return "/dev/ttyUSB0"
+
+
+SERI_PORT = sys.argv[1] if len(sys.argv) > 1 else port_bul()
 BAUD = 115200
 WS_ADRES = "localhost"
 WS_PORT = 8765

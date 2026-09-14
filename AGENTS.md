@@ -3,95 +3,116 @@
 ## Proje Nedir?
 ESP32 (Lolin32 Lite) + MPU-6050 IMU ile fiziksel eğim kontrollü, tarayıcıda çalışan
 3D uçuş simülatörü. Gazi Üniversitesi (Beşevler/Yenimahalle, Ankara) kampüsünün
-gerçek OpenStreetMap bina geometrileri üzerinde uçulur. Arayüz Türkçe.
+gerçek OpenStreetMap geometrileri üzerinde uçulur. Arayüz Türkçe.
 Uzak repo: https://github.com/GaziErgenekon/TanitimUcak
 
 ## Dosya Yapısı
-- `index.html` — Tek dosya uygulama: Three.js sahnesi, ejderha modeli (kanat çırpma
-  + sallanma animasyonlu), uçuş dinamiği, kameralar (takip/kokpit/gezin), HUD,
-  veri kaynakları. `binalar.js` globallerini okur. Başlangıç: Teknoloji Fakültesi
-  üstü (15, 40, 639), kuzeye bakış.
-- `binalar.js` — Kampüs çevre verisi (ELLE DÜZENLENEBİLİR):
-  - `ONEMLI_BINALAR`: isimli binalar (taban [x,z], yükseklik, renk, catRengi,
-    pencere:{yogunluk,renk,isikOran}/false, detay).
-  - `ARKA_PLAN_BINALAR`: kompakt [duzpoligon, yukseklik] (OSM otomatik).
-  - `PARKLAR`: {isim, tip, taban} düz yeşil poligonlar.
-  - `YOLLAR`: [duzluk, genislik(m), tip] — tip: ana/service/footway/path/pedestrian
-    (residential→service, secondary/trunk→ana olarak normalize edilir).
-  - `FISKIYELER`: {isim, merkez, yaricap}.
-  - `SPOR_ALANLARI`: {isim, spor, taban} — futbol/tenis/basket sahaları, koşu pisti.
-  - Üreten: `araçlar/kampus_verisi.py` (Overpass → önbellek → bu dosya).
+- `index.html` — Tek dosya uygulama: Three.js sahnesi, ejderha modeli, uçuş dinamiği,
+  kameralar (takip/kokpit/gezin), HUD, veri kaynakları, **Düzenleme Modu 2.0**.
+  `binalar.js` + `cevre.js` globallerini okur (ikisi de yoksa çökmez).
+  Başlangıç: Teknoloji Fakültesi üstü (15, 40, 639), kuzeye bakış.
+- `binalar.js` — ÜRETİLİR (`araçlar/kampus_verisi.py`):
+  - `ONEMLI_BINALAR`: isimli binalar. Alanlar: isim, taban, yukseklik, `osmWay`,
+    renk, catRengi, `pencere` (ops.), `detay.katsayisi` (kat sayısı).
+  - `ARKA_PLAN_BINALAR`: `[duzpoligon, yukseklik, osmWay]`.
+  - `PARKLAR`, `YOLLAR` ([duz, genislik, tip]), `FISKIYELER`, `SPOR_ALANLARI`.
+  - Yol tipleri: ana/service/footway/path/pedestrian + tertiary/unclassified/
+    living/primary/motorway/steps/cycleway/track.
+- `cevre.js` — ÜRETİLİR, opsiyonel katmanlar:
+  - `AGACLAR` [x,z,tip], `ISLETMELER` [x,z,tip,isim], `OTOPARKLAR` [duzpoligon],
+    `DURAKLAR` [x,z,tip,isim], `RAYLAR` [duzpoligon,tip].
+- `araçlar/elle_veri.json` — **ELLE DÜZENLEMELERİN TEK KAYNAĞI** (commitlenir):
+  binalar (sabit poligonlar; `osmWay` verirsen OSM kopyası otomatik silinir),
+  `sil` (yoksayılacak way id), `sira` (baştaki binalar), `renkler`, `pencereler`,
+  `parklar`, `fiskiyeler`, `yollar`, `poiler`, `agaclar`.
+- `araçlar/kampus_verisi.py` — binalar.js + cevre.js üretici (stdlib only;
+  3 Overpass ucu × GET/POST; `araçlar/osm_onbellek.json` önbelleği;
+  `--onbellek` ile ağsız üretim; `building:levels`/`height` (3-15 kat / 3-60 m
+  sınırıyla) yoksa alan tahmini; bina çakışması elle poligonlara göre ayıklanır).
 - `esp32_ucak_kumandasi/esp32_ucak_kumandasi.ino` — Lolin32 Lite firmware:
-  MPU-6050 complementary filtre (pitch/roll, 50 Hz) + buton, CSV `pitch,roll,buton`.
-  Pinler: SDA=25, SCL=26, buton=4 (GND'ye, pull-up). Kütüphane: Adafruit MPU6050.
-  Eksen kuralı: X ileri, Z yukarı → pitch burun-yukarı +, roll sağa-yatış +.
-  (pitch gyroY'nin NEGATİFİnden, roll gyroX'in POZİTİFİnden gelir — fizik gereği.)
-- `seri_kopru.py` — Firefox/Safari için seri→WebSocket köprüsü (`ws://localhost:8765`).
-- `araçlar/kampus_verisi.py` — binalar.js üretici (stdlib only; dayanıklı istemci:
-  3 endpoint × GET/POST denemesi, `araçlar/osm_onbellek.json` önbelleği).
-- `.gitignore` — `__pycache__`, `libs/`, `.venv/`, `node_modules/`, `osm_onbellek.json`
-  repo DIŞINDA tutulur. (`osm_onbellek.json` yeniden üretilebilir ara veridir.)
+  MPU-6050 complementary filtre (50 Hz) + buton + **BLE (Nordic UART)** + batarya.
+  USB seri ve BLE **aynı anda** basar. Butona >1.5 sn basmak BLE'yi aç/kapatır.
+- `seri_kopru.py` — Firefox/Safari için USB seri → WebSocket köprüsü
+  (`ws://localhost:8765`, port otomatik: ttyUSB*/ttyACM*).
+- `bt_kopru.py` — BLE → WebSocket köprüsü (bleak; Firefox/Safari için).
+- `test/` — `node --test test/test.mjs` (three opsiyonel: /tmp/opencode/geo).
+
+## Protokol / Donanım
+- CSV (50 Hz): `pitch,roll,butonState,pil_mV` — eski 3 alanlı firmware ile uyumlu;
+  `pil_mV=-1` → batarya ölçümü kapalı (HUD `—`).
+- Pinler: SDA=25, SCL=26, buton=4 (GND, pull-up). Batarya (ops.): BAT+ → 100k/100k
+  → GPIO35 + 100nF; firmware'de `PIL_AKTIF 1` yapınca okunur (Lolin32 Lite'ta
+  dahili bölücü yok varsayımı; önce multimetreyle doğrula).
+- BLE NUS UUID'leri: servis 6E400001-…, TX(notify) 6E400003-…, RX 6E400002-…;
+  cihaz adı `GAZI-UCAK`. Web Bluetooth Chrome/Edge + localhost/HTTPS ister.
+- Eksen kuralı: X ileri, Z yukarı → pitch burun-yukarı +, roll sağa-yatış +.
+  (pitch gyroY'nin NEGATİFİ, roll gyroX'in POZİTİFİ — fizik gereği.)
 
 ## Mimari Kararlar
 - **Koordinat:** kampüs merkezi (39.9435 N, 32.8205 E) = (0,0). x=doğu(+), z=güney(+),
   metre. Three.js'te -Z = kuzey/ileri.
-- **Rektörlük:** OSM'de isimli değil. Kullanıcı onaylı kural: fıskiye (213,401)
-  bitişiğindeki blok. Üretici, işaret noktasına (39.939483, 32.822092) en yakın
-  ≥400 m² binayı seçer (şu an OSM way 418594116 değil, **way 418645330**:
-  45×31 m, merkez ~177,530 — parkın güney bitişiği). Şüpheliyse binalar.js'ten elle
-  düzelt (düzenleme modu + E tuşu ile konum bulunur).
-- **Dekanlık:** OSM'de kaydı yok. Kullanıcı linkiyle (39.938969, 32.820167) OSM
-  way 418133405 poligonu sabitlendi (`SABIT_DEKANLIK_*`, 16 nokta, 18 m).
-  Üretici sabit poligonları (`sabitler` listesi) her üretimde başa ekler ve
-  çakışan arka plan binasını çıkarır.
-- **Taşkent:** OSM'de kaydı yok. Yolun karşısındaki yeni bina: OSM way 418133422
-  poligonu "Taşkent Binası" olarak sabitlendi (`SABIT_TASKENT_TABAN`, 5 nokta,
-  18 m). Dekanlıkla paylaşılan kenar çakışmasın diye 0.4 m içe çekildi
-  (duvar z-fight önlemi). NOT: ilk denemede yanlışlıkla yan komşu 3 blok
-  eklenmişti, geri alındı.
-- **Bina geometrisi:** `THREE.Shape((x,-z))` → Extrude → `rotateX(-π/2)`. Yan+çatı için
-  2 materyal grubu (0/1). Duvarlarda prosedürel pencere dokusu (3×6m karo, 2×2 küçük
-  pencere, tekrarlı UV;
-  arka plan tek doku, önemlilerde bina başına + `pencere` alanından ayarlanır).
-  Arka plan duvar/çatı AYRI iki merge mesh (tek malzemeli). NOT: mergeGeometries
-  grupları düşürür; malzeme dizili tek mesh HİÇ ÇİZİLMEZ — `dilimle()` ile ayır.
-  Yollar: genişlikli şerit (ribbon)
-  tek mesh + vertex rengi (ana=asfalt, service=gri, yaya=açık). Parklar: ShapeGeometry
-  (y=0.05). Fıskiye: mavi daire + silindir sütun. Spor: futbol yeşil, pist kırmızı,
-  tenis mavi (y=0.06). Veri listeleri `typeof` korumasıyla okunur (eski binalar.js
-  ile çökmez).
-- **Veri kaynakları:** Web Serial (Chromium) veya WebSocket köprüsü. Ortak `satirIsle()`
-  CSV parse; buton 1→0 düşen kenarında kamera değişir — web tarafında sönümleme var:
-  3 ardışık aynı örnek (~60ms) + 500ms refractory (`butonKenarIsle`, test.mjs'te
-  senaryolarla doğrulanır). Tek-seferlik klavye tuşlarında `e.repeat` yoksayılır.
-- **İşleme:** EMA α=0.15 + ±2° deadband + "Sıfırla"/C kalibrasyonu. `YURUT_*` işaret sabitleri.
-- **Uçuş:** 25 m/s sabit; roll→yaw (banklı dönüş), pitch→irtifa; min 0.8 m; ±1300 m sınır.
-- **Kameralar:** takip ↔ kokpit (buton/Enter) + **gezin modu** (G): WASD hareket,
-  ok tuşları bakış, Q/Z irtifa, +/- hız; uçaktan bağımsız, uçak uçmaya devam eder.
-- **Klavye simülasyonu:** ok tuşları (Sol=negatif roll → sola dönüş; sağ=pozitif).
-- **Düzenleme modu (E):** en yakın önemli bina bilgisi veya uçak konumundan yeni bina
-  şablonu panel/konsola döker → binalar.js'e yapıştır.
+- **Rektörlük/Dekanlık/Taşkent:** kullanıcı onaylı sabit poligonlar artık
+  `elle_veri.json > binalar` içinde (üretici kodunda değil). Yeniden üretim
+  bunları KORUR; çakışan arka plan binası üreticide ayıklanır.
+- **Bina geometrisi:** `THREE.Shape((x,-z))` → Extrude → `rotateX(-π/2)`.
+  **ExtrudeGeometry grup 0 = kapak (çatı), grup 1 = yan duvar** (three.js sırası;
+  eski kod ters varsayıyordu!). Materyal dizisi `[catMat, yanMat]` olmalı.
+  Yan duvar UV'leri `(x, 1-depth)` gelir → `duvarUVGuncelle()` duvar grubunu
+  yeniden yazar: u = baskın yatay eksen (m), v = dünya yüksekliği (m).
+  Böylece doku repeat'i metre cinsinden çalışır, kat hizası tutar.
+- **Pencereler:** `pencereAyar()` parametrik: kolonAralik (varsayılan 1.6 m),
+  katAralik (varsayılan `yukseklik/detay.katsayisi` veya 3 m), genislik, yukseklik,
+  zeminBos, yogunluk, renk, isikOran. `pencereDokusu()` önemli binalarda tam
+  yükseklik dokusu (her kat ayrı çizilir, zemin hizası birebir); arka planda
+  **tek kat karosu** + 4 varyant kovası (duvar = 4 merge mesh, çatı 1 mesh).
+  `pencere:false` → penceresiz. `--PENCERE-AYAR/DOKU--` blok imzalarını bozma.
+- **Arka plan:** `mergeGeometries` grupları düşürür; malzeme dizili tek mesh
+  ÇİZİLMEZ → duvar/çatı ayrı mesh. `arkaKur(haric)` yeniden kurar; her mesh'te
+  `userData.araliklar` face→bina eşlemesi (düzenleme seçimi için).
+- **Ağaçlar:** instanced (1 gövde + 3 yaprak = 4 çizim); OSM `natural=tree/tree_row`
+  + park/orman içine prosedürel (bütçe 6000, kapsam 1400 m). POI'ler mesafeyle
+  sönen billboard sprite.
+- **Düzenleme Modu 2.0 (E):** tıkla-seç (önemli + arka plan), köşe sürükle,
+  köşe ekle/sil, isim/yükseklik/kat/renk/pencere canlı önizleme, "JSON Kopyala"
+  (`elle_veri.json > binalar` kaydı üretir). Arka plan binası seçilince kovadan
+  çıkarılıp bireysel düzenlenebilir binaya dönüşür.
+- **Veri kaynakları:** Web Serial / Web Bluetooth / WebSocket. Ortak `satirIsle()`;
+  BLE bildirimi satır bölebilir → tampon. Buton 1→0 kenar sönümlemesi: 3 ardışık
+  aynı örnek + 500 ms refractory (`butonKenarIsle`).
+- **İşleme:** EMA α=0.15 + ±2° deadband + C kalibrasyon. `YURUT_*` işaret sabitleri.
+- **Uçuş:** 25 m/s; roll→yaw, pitch→irtifa; min 0.8 m; ±1300 m sınır.
+- **Kameralar:** takip ↔ kokpit (buton/Enter) + gezin (G: WASD, oklar, Q/Z, +/-).
+- **Katman paneli:** Önemli/Etiket/Arka plan/Yol/Park/Spor/Fıskiye/Ağaç/
+  İşletme-Durak/Otopark/Raylı.
 
 ## Çalıştırma
 ```bash
 python3 -m http.server 8000
-# Chrome/Edge: "Seri Porttan Bağlan" | Firefox: "PYTHONPATH=libs python3 seri_kopru.py" + "WebSocket ile Bağlan"
+# Veri: python3 araçlar/kampus_verisi.py [--onbellek]
+# Chrome/Edge: "Seri Porttan Bağlan" veya "Bluetooth ile Bağlan" (Web Bluetooth)
+# Firefox: PYTHONPATH=libs python3 seri_kopru.py  (veya bt_kopru.py) + "WebSocket ile Bağlan"
 # Arduino IDE: esp32_ucak_kumandasi.ino'yu Lolin32 Lite'a yükle (115200 baud izle)
 ```
 
 ## Kısıtlar / Notlar
-- Web Serial yalnızca Chromium; ESP32'de 3D render imkânsız (PC/Pi gerekir).
-- OSM'de bina `height` yok → 2-8 kat (6-24 m) taban-alan tahmini.
-- Overpass sık 504 verir → üretici önbelleğe düşer; `osm_onbellek.json` commitlenmez.
-- binalar.js'i yeniden üretmek elle ONEMLI düzenlemelerini EZER — önce yedekle.
-- arduino-cli bu makinede yok; .ino derleme doğrulaması yapılamadı (API kullanımı standart,
-  filtre matematiği Python simülasyonuyla doğrulandı).
+- Web Bluetooth yalnız Chromium + güvenli bağlam (localhost/HTTPS); Firefox/Safari
+  için `bt_kopru.py` (pip: bleak websockets). Web Serial da yalnız Chromium.
+- ESP32'de 3D render imkânsız (PC/Pi gerekir).
+- OSM'de `height` yok → `building:levels` (varsa) ×3 m×2 görsel ölçek; C Blok'un
+  hatalı 66 kat/220 m verisi sınırlarla reddedilir. Overpass sık 504 verir →
+  üretici önbelleğe düşer; `osm_onbellek.json` commitlenmez.
+- Elle düzenlemeler artık kalıcı: önce `elle_veri.json`'a yaz (Edit 2.0 JSON'unu
+  yapıştır), sonra üret. Doğrudan binalar.js düzenlemek yeniden üretimde kaybolur.
 
 ## Testler
-- `node --check` (index.html modülü + binalar.js).
-- Geometri testi /tmp/opencode/geo/test.mjs (three@0.160, npm --prefix ile kurulur):
-  extrude yönü, materyal grupları, merge, 32 önemli bina, Rektörlük konumu
-  (fıskiye bitişiği), PARKLAR/YOLLAR/FISKIYELER/SPOR_ALANLARI geçerliliği,
-  futbol+koşu pisti varlığı, ±1300 m kapsam.
+- `node --check` (index.html modülü çıkartılarak, binalar.js, cevre.js).
+- `node --test test/test.mjs`: pencere parametreleri/UV, buton sönümleme, CSV 3/4
+  alan, pil yüzdesi, veri geçerliliği (isim tekilliği, ±1400 m, way id), geometri
+  (extrude yönü, grup 0=kapak/1=duvar, dilimle, merge) — three varsa
+  (`npm --prefix /tmp/opencode/geo i three@0.160.0`; yoksa geometri atlanır).
+- `python3 -m py_compile seri_kopru.py bt_kopru.py araçlar/kampus_verisi.py`.
+- Firefox headless duman testi: `python3 -m http.server` + `firefox --headless
+  --screenshot` (WebGL yazılım render ile sahne görünür).
+- arduino-cli bu makinede yok; .ino derleme doğrulaması kullanıcıda (API kullanımı
+  standart Arduino-ESP32 BLE API'si; filtre matematiği simülasyonla doğrulanmıştı).
 - Köprü e2e: pty → seri_kopru.py → ws istemcisi (PYTHONPATH=/tmp/opencode/libs).
-- CDN jsdelivr three@0.160.0 erişilebilir.
