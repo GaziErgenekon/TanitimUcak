@@ -88,6 +88,13 @@
     </label>
   </div>
   <div class="bolum">
+    <div class="etiket">Uçuş</div>
+    <label class="cek">Hız
+      <input type="range" id="rngHiz" min="10" max="120" step="5" style="flex:1">
+      <span id="hizDeger" style="font-size:12px;color:#7cc4ff;min-width:52px;text-align:right">25 m/s</span>
+    </label>
+  </div>
+  <div class="bolum">
     <div class="etiket">Çarpışma</div>
     <label class="cek"><input type="checkbox" id="chkCarpisma" checked> Binalara çarpma</label>
     <label class="cek"><input type="checkbox" id="chkAgacCarpisma" checked> Ağaçlara çarpma</label>
@@ -183,7 +190,13 @@ const BAYRAK_L = (typeof BAYRAKLAR === 'undefined') ? [] : BAYRAKLAR;
 const CARPISMA_YOK_L = (typeof CARPISMA_YOK === 'undefined') ? [] : CARPISMA_YOK;
 
 // ===== AYARLAR ================================================================
-const HIZ_MS          = 25;      // uçağın sabit ileri hızı (m/s)
+const HIZ_VARSAYILAN  = 25;      // uçağın ileri hızı (m/s), ayarlardan değişir
+const HIZ_MIN         = 10, HIZ_MAX = 120, HIZ_ADIM = 5;
+let hizMs = HIZ_VARSAYILAN;
+try {
+  const kayitli = Number(localStorage.getItem('gazi_hiz'));
+  if (Number.isFinite(kayitli) && kayitli >= HIZ_MIN && kayitli <= HIZ_MAX) hizMs = kayitli;
+} catch (e) { /* özel mod */ }
 const DONUS_KAZANCI   = 1.1;     // roll(°) başına dönüş hızı (°/s)
 const TIRMANIS_KAZANCI= 0.55;    // pitch(°) başına dikey hız (m/s)
 const EMA_ALFA        = 0.15;    // sensör yumuşatma (0-1, küçük = daha yumuşak)
@@ -1552,7 +1565,7 @@ function durumGuncelle(ek) {
   d0.innerHTML =
     `<b>Kaynak:</b> ${knAdi} | <b>Pitch:</b> ${ham.pitch.toFixed(1)}° | ` +
     `<b>Roll:</b> ${ham.roll.toFixed(1)}° | <b>İrtifa:</b> ${konum.y.toFixed(0)} m | ` +
-    `<b>Hız:</b> ${HIZ_MS} m/s | <b>Kamera:</b> ${kn} | ` +
+    `<b>Hız:</b> ${hizMs} m/s | <b>Kamera:</b> ${kn} | ` +
     `<b>Pil:</b> <span style="color:${pilRenk}">${pilMetni()}</span>` +
     `${carpismaUyari}${veriBilgi}` + (ek ? ` | ${ek}` : '');
 }
@@ -1707,6 +1720,19 @@ document.getElementById('chkCarpisma').onchange = (e) => { carpismaAcik = e.targ
 document.getElementById('chkAgacCarpisma').onchange = (e) => { agacCarpisma = e.target.checked; };
 // Araç skini
 document.getElementById('selSkin').onchange = (e) => modelKur(e.target.value);
+// Uçuş hızı (10-120 m/s)
+const rngHizEl = document.getElementById('rngHiz');
+const hizDegerEl = document.getElementById('hizDeger');
+function hizGoster() {
+  rngHizEl.value = String(hizMs);
+  hizDegerEl.textContent = hizMs + ' m/s';
+}
+rngHizEl.oninput = (e) => {
+  hizMs = Math.max(HIZ_MIN, Math.min(HIZ_MAX, Number(e.target.value) || HIZ_VARSAYILAN));
+  hizGoster();
+  try { localStorage.setItem('gazi_hiz', String(hizMs)); } catch (e2) { /* özel mod */ }
+};
+hizGoster();
 
 function gezinToggle() {
   gezinModu = !gezinModu;
@@ -1986,7 +2012,7 @@ function dongu() {
 
   // --- MODEL ANİMASYONU (skine göre) + bayrak dalgası ---
   ejderhaT += dt;
-  if (aktifModel) aktifModel.animasyon(ejderhaT, dt, HIZ_MS);
+  if (aktifModel) aktifModel.animasyon(ejderhaT, dt, hizMs);
   bayrakGuncelle(ejderhaT);
 
   // --- GEZİN MODU: serbest kamera (uçaktan bağımsız) ---
@@ -2047,7 +2073,7 @@ function dongu() {
   const yeniY = Math.max(0.8, konum.y + dikeyHiz * dt);
   // Çarpışmalı ilerleme: kaydırmalı (önce tam adım, sonra x/z ayrı ayrı)
   const yaricap = (aktifModel && aktifModel.yaricap) || 2.5;
-  const adimYol = HIZ_MS * dt;
+  const adimYol = hizMs * dt;
   const hedefX = konum.x + ileri.x * adimYol, hedefZ = konum.z + ileri.z * adimYol;
   if (!carpismaVar(hedefX, hedefZ, yeniY, yaricap)) {
     konum.x = hedefX; konum.z = hedefZ;
