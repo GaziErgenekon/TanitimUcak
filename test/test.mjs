@@ -217,7 +217,7 @@ function carpismaSandbox() {
   const ctx = { Math, Infinity };
   vm.createContext(ctx);
   vm.runInContext(blok('CARPISMA') +
-    '\n;globalThis.__c = { polIcinde, polKenarMesafe, carpismaTesti };\n', ctx);
+    '\n;globalThis.__c = { polIcinde, polKenarMesafe, binaKapsar, carpismaTesti, carpismaTavan, carpismaInisY };\n', ctx);
   return ctx.__c;
 }
 
@@ -250,6 +250,32 @@ test('carpismaTesti: ağaç silindiri', () => {
   assert.equal(c.carpismaTesti([], agac, 0, 1, 2, 0.5), true, 'gövdeye değer');
   assert.equal(c.carpismaTesti([], agac, 0, 3, 2, 0.5), false, 'menzil dışı');
   assert.equal(c.carpismaTesti([], agac, 0, 0.5, 5, 0.5), false, 'üstünden geçer');
+});
+
+test('carpismaTavan: çevredeki en yüksek bina kotu', () => {
+  const c = carpismaSandbox();
+  const alcak = { pol: [[0, 0], [10, 0], [10, 10], [0, 10]], yukseklik: 8,
+    kapali: false, bbox: [0, 10, 0, 10] };
+  const yuksek = { pol: [[4, 4], [12, 4], [12, 12], [4, 12]], yukseklik: 20,
+    kapali: false, bbox: [4, 12, 4, 12] };
+  assert.equal(c.carpismaTavan([alcak, yuksek], 5, 5, 1), 20, 'çakışınca en yüksek');
+  assert.equal(c.carpismaTavan([alcak, yuksek], 1, 1, 0.5), 8, 'yalnız alçak bina');
+  assert.equal(c.carpismaTavan([alcak], 30, 30, 1), -Infinity, 'bina yoksa -Infinity');
+  assert.equal(c.carpismaTavan([{ ...yuksek, kapali: true }], 6, 6, 1), -Infinity,
+    'kapalı bina yok sayılır');
+});
+
+test('carpismaInisY: yukarıdan inerken çatıya konar, içine girmez', () => {
+  const c = carpismaSandbox();
+  const bina = { pol: [[0, 0], [10, 0], [10, 10], [0, 10]], yukseklik: 12,
+    kapali: false, bbox: [0, 10, 0, 10] };
+  assert.equal(c.carpismaInisY(50, 40, -Infinity), 40, 'bina yokken serbest');
+  const konan = c.carpismaInisY(30, 10, 12);
+  assert.ok(Math.abs(konan - 12.61) < 1e-9, 'çatı kotunda durur');
+  assert.equal(c.carpismaTesti([bina], [], 5, 5, konan, 2), false, 'konulan kot çarpışmasız');
+  assert.equal(c.carpismaInisY(30, 20, 12), 20, 'çatı üstünde kalırsa dokunma');
+  assert.equal(c.carpismaInisY(5, 20, 12), 20, 'tırmanışta dokunma');
+  assert.equal(c.carpismaInisY(8, 3, 12), 8, 'içerideyken daha da inme');
 });
 
 // --- geometri (three varsa) ---------------------------------------------------

@@ -1079,6 +1079,7 @@ for (const b of ONEMLI_L) {
 }
 
 // --CARPISMA-BASLA-- (test/ayikla.mjs okur; imzayı bozma)
+const CARPISMA_PAY = 0.6;               // çatı üstü serbestlik payı (m)
 // Nokta poligon içinde mi (ışın atma yöntemi)
 function polIcinde(x, z, pol) {
   let ic = false;
@@ -1103,13 +1104,17 @@ function polKenarMesafe(x, z, pol) {
   }
   return en;
 }
+// Nokta (x,z) + yarıçap binanın tabanına (veya duvarına r kadar yakın) değiyor mu?
+function binaKapsar(b, x, z, r) {
+  if (x < b.bbox[0] - r || x > b.bbox[1] + r ||
+      z < b.bbox[2] - r || z > b.bbox[3] + r) return false;
+  return polIcinde(x, z, b.pol) || polKenarMesafe(x, z, b.pol) < r;
+}
 // Bina + ağaç listelerinde çarpışma var mı? kapali=true kayıtlar yok sayılır.
 function carpismaTesti(binalar, agaclar, x, z, y, r) {
   for (const b of binalar) {
-    if (b.kapali || y > b.yukseklik + 0.6) continue;
-    if (x < b.bbox[0] - r || x > b.bbox[1] + r ||
-        z < b.bbox[2] - r || z > b.bbox[3] + r) continue;
-    if (polIcinde(x, z, b.pol) || polKenarMesafe(x, z, b.pol) < r) return true;
+    if (b.kapali || y > b.yukseklik + CARPISMA_PAY) continue;
+    if (binaKapsar(b, x, z, r)) return true;
   }
   for (const a of agaclar) {
     if (y > a.yukseklik) continue;
@@ -1118,6 +1123,22 @@ function carpismaTesti(binalar, agaclar, x, z, y, r) {
     if (dx * dx + dz * dz < menzil * menzil) return true;
   }
   return false;
+}
+// Alçalışta (x,z) çevresindeki en yüksek bina kotu; bina yoksa -Infinity
+function carpismaTavan(binalar, x, z, r) {
+  let tavan = -Infinity;
+  for (const b of binalar) {
+    if (b.kapali) continue;
+    if (binaKapsar(b, x, z, r) && b.yukseklik > tavan) tavan = b.yukseklik;
+  }
+  return tavan;
+}
+// Alçalışta hedef irtifa: yukarıdan bina içine girmeyi engeller (çatıya konar)
+function carpismaInisY(konumY, hedefY, tavan) {
+  if (hedefY >= konumY) return hedefY;                    // tırmanış / yatay
+  const tavanY = tavan + CARPISMA_PAY + 0.01;             // güvenli çatı kotu
+  if (konumY >= tavanY) return Math.max(hedefY, tavanY);  // üstten inerken çatıda dur
+  return konumY;                                          // içerideyken daha da inme
 }
 // --CARPISMA-BIT--
 
@@ -1206,6 +1227,12 @@ function carpismaVar(x, z, y, r) {
   const adaylar = carpismaKutular(x, z, r);
   for (const g of carpismaGenel) adaylar.push(g);
   return carpismaTesti(adaylar, agacCarpisma ? carpismaAgaclar : [], x, z, y, r);
+}
+function carpismaTavanVar(x, z, r) {
+  if (!carpismaAcik) return -Infinity;
+  const adaylar = carpismaKutular(x, z, r);
+  for (const g of carpismaGenel) adaylar.push(g);
+  return carpismaTavan(adaylar, x, z, r);
 }
 
 // ===== MODELLER (skin): ejderha / uçak / kurt ================================
@@ -2181,9 +2208,15 @@ function dongu() {
   yaw -= THREE.MathUtils.degToRad(rollEtkili) * DONUS_KAZANCI * dt;
   const dikeyHiz = pitchEtkili * TIRMANIS_KAZANCI;
   const ileri = new THREE.Vector3(-Math.sin(yaw), 0, -Math.cos(yaw));
-  const yeniY = Math.max(0.8, konum.y + dikeyHiz * dt);
-  // Çarpışmalı ilerleme: kaydırmalı (önce tam adım, sonra x/z ayrı ayrı)
   const yaricap = (aktifModel && aktifModel.yaricap) || 2.5;
+  let yeniY = Math.max(0.8, konum.y + dikeyHiz * dt);
+  // Yukarıdan bina içine girmeyi engelle: alçalışta çatı kotunda dur
+  if (yeniY < konum.y) {
+    const sabitY = carpismaInisY(konum.y, yeniY,
+      carpismaTavanVar(konum.x, konum.z, yaricap));
+    if (sabitY !== yeniY) { yeniY = sabitY; sonCarpismaMs = performance.now(); }
+  }
+  // Çarpışmalı ilerleme: kaydırmalı (önce tam adım, sonra x/z ayrı ayrı)
   const adimYol = hizMs * dt;
   const hedefX = konum.x + ileri.x * adimYol, hedefZ = konum.z + ileri.z * adimYol;
   if (!carpismaVar(hedefX, hedefZ, yeniY, yaricap)) {

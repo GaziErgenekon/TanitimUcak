@@ -92,7 +92,8 @@ Uzak repo: https://github.com/GaziErgenekon/TanitimUcak
   kullanıcı OSM linkinden: (141.2, 581.5); C Kapısı (376, 213).
 - **Çarpışma:** 32 m spatial grid; önemli + arka plan + uzak bina poligonları ve
   ağaç silindirleri. Kaydırmalı ilerleme (tam adım → x/z ayrı); bina yüksekliği
-  üstü serbest. Bina başına `carpisma:false` / `CARPISMA_YOK`; Ayarlar'dan global
+  üstü serbest ama alçalışta `carpismaInisY` çatıya kondurur (yukarıdan içine
+  girilmez). Bina başına `carpisma:false` / `CARPISMA_YOK`; Ayarlar'dan global
   ve ağaç anahtarları. `--CARPISMA--` blok imzasını bozma.
 - **Modeller/skinler:** `MODEL_FABRIKASI` ejderha (Dişsiz esintili: siyah gövde,
   yeşil göz, kırmızı kuyruk yüzgeci), uçak (dönen pervane, iniş takımı) ve kurt
@@ -132,8 +133,8 @@ python3 -m http.server 8000
 ## Testler
 - `node --check` (index.html modülü çıkartılarak, binalar.js, cevre.js, bolgeler.js).
 - `node --test test/test.mjs`: pencere parametreleri/UV, buton sönümleme, CSV 3/4
-  alan, pil yüzdesi, çarpışma matematiği (poligon içi/mesafe, yükseklik, ağaç),
-  kapı/bayrak ve bolgeler.js verisi (isim tekilliği, ±3200 m, way id), geometri
+  alan, pil yüzdesi, çarpışma matematiği (poligon içi/mesafe, yükseklik, ağaç,
+  çatı kotu/iniş), kapı/bayrak ve bolgeler.js verisi (isim tekilliği, ±3200 m, way id), geometri
   (extrude yönü, grup 0=kapak/1=duvar, dilimle, merge) — three varsa
   (`npm --prefix /tmp/opencode/geo i three@0.160.0`; yoksa geometri atlanır).
 - Üretim determinist: `python3 araçlar/kampus_verisi.py --onbellek` iki kez
