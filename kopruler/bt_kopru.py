@@ -6,17 +6,19 @@ Firefox/Safari Web Bluetooth desteklemediği için bu köprü BLE verisini
 mevcut WebSocket kanalına basar; tarayıcıda "WebSocket ile Bağlan" yeterlidir.
 
 Kurulum (bir kez, iki yöntem):
-    a) python3 -m venv .venv && .venv/bin/pip install bleak websockets
+    a) python3 -m venv .venv && .venv/bin/pip install -r kopruler/requirements.txt
+       Windows: py -3 -m venv .venv && .venv\\Scripts\\pip install -r kopruler\\requirements.txt
     b) (venv yoksa) python3 -m pip install --target=libs bleak websockets
 
-Çalıştırma:
-    .venv/bin/python bt_kopru.py                     # cihaz adı: GAZI-UCAK
-    PYTHONPATH=libs python3 bt_kopru.py              # yöntem b
-    PYTHONPATH=libs python3 bt_kopru.py GAZI-UCAK    # ad değiştirilebilir
+Çalıştırma (kolay yol: depo kökündeki baslat.sh / baslat.bat "bt" seçeneği):
+    .venv/bin/python kopruler/bt_kopru.py                     # cihaz adı: GAZI-UCAK
+    PYTHONPATH=libs python3 kopruler/bt_kopru.py              # yöntem b
+    PYTHONPATH=libs python3 kopruler/bt_kopru.py GAZI-UCAK    # ad değiştirilebilir
 
 Notlar:
 - Cihaz kapanıp açılırsa köprü otomatik yeniden bağlanır.
 - Linux'ta BLE izni için: 'sudo usermod -aG bluetooth $USER' + yeniden giriş.
+- Windows 10/11'de Bluetooth açık olmalı; ek sürücü gerekmez.
 - Aynı anda hem USB seri hem BLE kullanılabilir; bu köprü yalnız BLE içindir.
 """
 

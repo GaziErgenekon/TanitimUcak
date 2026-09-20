@@ -41,9 +41,19 @@ export function veriYukle() {
   return ctx.__veri;
 }
 
-// three varsa modülü döndürür; yoksa null (geometri testleri atlanır)
+// Yerel three yolu (tarayıcıdaki importmap ile aynı dosya)
+export function threeYolu() {
+  return url.pathToFileURL(path.join(KOK, 'vendor', 'three', 'three.module.js')).href;
+}
+
+export function threeAddonYolu(ad) {
+  return url.pathToFileURL(path.join(KOK, 'vendor', 'three', 'addons', ad)).href;
+}
+
+// three modülünü döndürür (önce depodaki yerel kopya); yoksa null
 export async function threeYukle() {
-  const adaylar = ['three', '/tmp/opencode/geo/node_modules/three/build/three.module.js'];
+  const adaylar = [threeYolu(), 'three',
+    '/tmp/opencode/geo/node_modules/three/build/three.module.js'];
   for (const aday of adaylar) {
     try { return await import(aday); } catch {}
   }

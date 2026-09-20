@@ -1,9 +1,48 @@
-// GAZİ Kampüs Uçuş Simülatörü testleri — bağımlılık yok (three opsiyonel).
-// Çalıştırma: node --test test/
+// GAZİ Kampüs Uçuş Simülatörü testleri — bağımlılık yok (three yerel kopyadan).
+// Çalıştırma: node --test test/test.mjs
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import fs from 'node:fs';
+import path from 'node:path';
 import vm from 'node:vm';
-import { blok, veriYukle, threeYukle } from './ayikla.mjs';
+import { KOK, blok, veriYukle, threeYukle, threeAddonYolu } from './ayikla.mjs';
+
+// --- offline paket: three yerelleştirme ---------------------------------------
+test('three yerel kopyası var ve index.html CDN kullanmıyor', () => {
+  const kok = (ad) => path.join(KOK, ad);
+  for (const dosya of ['vendor/three/three.module.js',
+    'vendor/three/addons/utils/BufferGeometryUtils.js',
+    'vendor/three/LICENSE', 'vendor/three/package.json']) {
+    assert.ok(fs.existsSync(kok(dosya)), `eksik: ${dosya}`);
+  }
+  const html = fs.readFileSync(kok('index.html'), 'utf8');
+  assert.ok(html.includes('"./vendor/three/three.module.js"'), 'importmap yerel olmalı');
+  assert.ok(html.includes('"three/addons/": "./vendor/three/addons/"'), 'addons yerel olmalı');
+  assert.ok(!html.includes('cdn.jsdelivr.net'), 'CDN bağımlılığı kalmamalı');
+});
+
+// --- PWA / yayın dosyaları ----------------------------------------------------
+test('PWA dosyaları var ve service worker listesi tutarlı', () => {
+  const kok = (ad) => path.join(KOK, ad);
+  for (const dosya of ['manifest.webmanifest', 'sw.js', 'ikon-192.png',
+    'ikon-512.png', 'ikon-512-maskable.png', 'araçlar/yayin_paketi.py']) {
+    assert.ok(fs.existsSync(kok(dosya)), `eksik: ${dosya}`);
+  }
+  const sw = fs.readFileSync(kok('sw.js'), 'utf8');
+  for (const dosya of ['index.html', 'binalar.js', 'cevre.js', 'bolgeler.js',
+    'manifest.webmanifest', 'ikon-192.png', 'ikon-512.png',
+    'ikon-512-maskable.png', 'vendor/three/three.module.js',
+    'vendor/three/addons/utils/BufferGeometryUtils.js']) {
+    assert.ok(sw.includes(`./${dosya}`), `sw.js önbelleğinde yok: ${dosya}`);
+  }
+  const manifest = JSON.parse(fs.readFileSync(kok('manifest.webmanifest'), 'utf8'));
+  assert.equal(manifest.start_url, './');
+  assert.ok(manifest.icons.length >= 3, 'ikon listesi');
+  const html = fs.readFileSync(kok('index.html'), 'utf8');
+  assert.ok(html.includes('rel="manifest"'), 'manifest bağlantısı');
+  assert.ok(html.includes("register('sw.js')"), 'SW kaydı');
+  assert.ok(html.includes('YEREL_SAYFA'), 'otomatik WS yalnız yerelde');
+});
 
 // --- pencereAyar / pencere sınırları -----------------------------------------
 function pencereSandbox() {
@@ -321,7 +360,8 @@ test('binaGeometrisi: extrude yere dik, yükseklik doğru', { skip: !THREE }, ()
 
 test('dilimle: duvar/çatı ayrık ve birleştirilebilir', { skip: !THREE }, async () => {
   let mergeGeometries = null;
-  for (const aday of ['three/addons/utils/BufferGeometryUtils.js',
+  for (const aday of [threeAddonYolu('utils/BufferGeometryUtils.js'),
+    'three/addons/utils/BufferGeometryUtils.js',
     '/tmp/opencode/geo/node_modules/three/examples/jsm/utils/BufferGeometryUtils.js']) {
     try { ({ mergeGeometries } = await import(aday)); break; } catch {}
   }

@@ -42,10 +42,34 @@ Uzak repo: https://github.com/GaziErgenekon/TanitimUcak
 - `esp32_ucak_kumandasi/esp32_ucak_kumandasi.ino` — Lolin32 Lite firmware:
   MPU-6050 complementary filtre (50 Hz) + buton + **BLE (Nordic UART)** + batarya.
   USB seri ve BLE **aynı anda** basar. Butona >1.5 sn basmak BLE'yi aç/kapatır.
-- `seri_kopru.py` — Firefox/Safari için USB seri → WebSocket köprüsü
-  (`ws://localhost:8765`, port otomatik: ttyUSB*/ttyACM*).
-- `bt_kopru.py` — BLE → WebSocket köprüsü (bleak; Firefox/Safari için).
-- `test/` — `node --test test/test.mjs` (three opsiyonel: /tmp/opencode/geo).
+- `kopruler/seri_kopru.py` — Firefox/Safari için USB seri → WebSocket köprüsü
+  (`ws://localhost:8765`; port otomatik: Linux ttyUSB*/ttyACM*, macOS
+  cu.usbserial*/cu.usbmodem* (cu önce) + tty.* yedeği, Windows
+  `serial.tools.list_ports` COM*; kopmada 3 sn'de yeniden bağlanır).
+- `kopruler/bt_kopru.py` — BLE → WebSocket köprüsü (bleak; Firefox/Safari için).
+- `kopruler/requirements.txt` — pyserial, websockets, bleak (venv/libs kurulumu).
+- `baslat.py` + `baslat.sh` / `baslat.command` / `baslat.bat` — tek tık
+  başlatıcı: boş portta (8000-8010) yerel HTTP sunucusu + tarayıcı;
+  `sunucu|seri|bt` modları; `kopru-seri|kopru-bt` yalnız köprü çalıştırır
+  (campus.gazisiber.org gibi hosted sayfa için; sunucu/tarayıcı açılmaz).
+  Köprü modunda `.venv` kurar, olmazsa (python3-venv yoksa) `--target libs/`
+  yedeğine düşer; SIGTERM'i köprüye devreder. `requirements.txt` özetini
+  `.gazi-bagimlilik` damgasına yazar → sonraki açılışlar internetsiz.
+  Menü yalnız TTY varsa. `baslat.command` macOS Finder çift tık sarmalayıcısı.
+- `vendor/three/` — Three.js 0.160.0 yerel kopyası (MIT, `LICENSE` ve Node
+  self-reference için `package.json`). index.html importmap'i buraya bakar;
+  **CDN bağımlılığı yok, internet gerekmez.**
+- `manifest.webmanifest` + `sw.js` + `ikon-192.png` / `ikon-512.png` /
+  `ikon-512-maskable.png` — PWA: sürümlü (SURUM) cache-first service worker;
+  index.html ve sw.js sunucuda `no-cache` sunulmalı. Yayın güncellemesinde
+  SURUM artırılır.
+- `araçlar/yayin_paketi.py` — statik yayın paketi üretici (stdlib; `yayin/`
+  klasörü ve `--zip`). Pakete Python/ESP32/test dosyaları GİRMEZ.
+- `README.md` — stand görevlisi kurulum/kullanım/sorun giderme kılavuzu
+  (Yayın/Caddy, macOS notları dahil).
+- `belgeler/STAND-KARTI.md` — yazdırılabilir tek sayfa görevli kartı.
+- `test/` — `node --test test/test.mjs` (three `vendor/three`'den;
+  `/tmp/opencode/geo` yalnız yedek; PWA/yayın dosya testi dahil).
 
 ## Protokol / Donanım
 - CSV (50 Hz): `pitch,roll,butonState,pil_mV` — eski 3 alanlı firmware ile uyumlu;
@@ -113,16 +137,34 @@ Uzak repo: https://github.com/GaziErgenekon/TanitimUcak
 
 ## Çalıştırma
 ```bash
-python3 -m http.server 8000
+./baslat.sh [sunucu|seri|bt|kopru-seri|kopru-bt]   # Linux; macOS .command, Win .bat
+python3 -m http.server 8000         # eşdeğeri (köprüsüz hızlı test)
+# Yayın: python3 araçlar/yayin_paketi.py --zip
 # Veri: python3 araçlar/kampus_verisi.py [--onbellek]
 # Chrome/Edge: "Seri Porttan Bağlan" veya "Bluetooth ile Bağlan" (Web Bluetooth)
-# Firefox: PYTHONPATH=libs python3 seri_kopru.py  (veya bt_kopru.py) + "WebSocket ile Bağlan"
+# Firefox: ./baslat.sh seri  (veya bt) + tarayıcıda "WebSocket ile Bağlan"
+# Hosted sayfa (campus.gazisiber.org): ./baslat.sh kopru-seri  (+ "WebSocket ile Bağlan")
 # Arduino IDE: esp32_ucak_kumandasi.ino'yu Lolin32 Lite'a yükle (115200 baud izle)
 ```
 
 ## Kısıtlar / Notlar
 - Web Bluetooth yalnız Chromium + güvenli bağlam (localhost/HTTPS); Firefox/Safari
-  için `bt_kopru.py` (pip: bleak websockets). Web Serial da yalnız Chromium.
+  için `kopruler/bt_kopru.py` (pip: bleak websockets). Web Serial Chrome/Edge
+  masaüstünde (89+) ve **Firefox 151+**'ta var (Firefox site başına Mozilla
+  "seri port" eklentisi ister); Safari hiç desteklemez.
+- Stand hedefi: Chrome/Edge + USB seri en kolay yol (Python gerekmez); Firefox
+  için `baslat.sh seri`/`baslat.bat seri`. Oynanış çevrimdışı çalışır
+  (`vendor/three`), köprülerin ilk kurulumu internet ister.
+- Windows'ta bat dosyası CRLF (`.gitattributes`); venv yolu Scripts/, Linux bin/;
+  macOS'ta `baslat.command` çift tık (LF + çalıştırma biti git'te).
+- **Hosted (campus.gazisiber.org)**: HTTPS zorunlu (Web Serial + SW). Chrome/Edge
+  147+ yayınlanmış sayfadan `ws://localhost:8765`'e LNA izni sorar (site başına,
+  `LocalNetworkAccessAllowedForUrls` ile ön verilebilir). Bu yüzden otomatik WS
+  denemesi yalnız yerel sayfada (`YEREL_SAYFA`); hosted'da düğmeyle bağlanılır.
+  PWA cache-first: index.html/sw.js `no-cache`, vendor uzun önbellek; sürüm
+  artırımı `sw.js > SURUM`.
+- Yayın paketi: `python3 araçlar/yayin_paketi.py --zip` → `yayin/` + zip
+  (gitignore'lu). iframe'e gömülürse `allow="serial; bluetooth; loopback-network"`.
 - ESP32'de 3D render imkânsız (PC/Pi gerekir).
 - OSM'de `height` yok → `building:levels` (varsa) ×3 m×2 görsel ölçek; C Blok'un
   hatalı 66 kat/220 m verisi sınırlarla reddedilir. Overpass sık 504 verir →
@@ -132,16 +174,23 @@ python3 -m http.server 8000
 
 ## Testler
 - `node --check` (index.html modülü çıkartılarak, binalar.js, cevre.js, bolgeler.js).
-- `node --test test/test.mjs`: pencere parametreleri/UV, buton sönümleme, CSV 3/4
-  alan, pil yüzdesi, çarpışma matematiği (poligon içi/mesafe, yükseklik, ağaç,
-  çatı kotu/iniş), kapı/bayrak ve bolgeler.js verisi (isim tekilliği, ±3200 m, way id), geometri
-  (extrude yönü, grup 0=kapak/1=duvar, dilimle, merge) — three varsa
-  (`npm --prefix /tmp/opencode/geo i three@0.160.0`; yoksa geometri atlanır).
+- `node --test test/test.mjs`: offline three yerelleştirme, PWA dosyaları
+  (manifest/sw/ikon listesi tutarlılığı), pencere parametreleri/UV, buton
+  sönümleme, CSV 3/4 alan, pil yüzdesi, çarpışma matematiği (poligon
+  içi/mesafe, yükseklik, ağaç, çatı kotu/iniş), kapı/bayrak ve bolgeler.js
+  verisi (isim tekilliği, ±3200 m, way id), geometri (extrude yönü, grup
+  0=kapak/1=duvar, dilimle, merge). three `vendor/three`'den gelir
+  (Node self-reference); `/tmp/opencode/geo` yalnız yedek.
 - Üretim determinist: `python3 araçlar/kampus_verisi.py --onbellek` iki kez
   çalıştırıldığında dosyalar bit bit aynı olmalı.
-- `python3 -m py_compile seri_kopru.py bt_kopru.py araçlar/kampus_verisi.py`.
+- `python3 -m py_compile baslat.py kopruler/seri_kopru.py kopruler/bt_kopru.py
+  araçlar/kampus_verisi.py araçlar/yayin_paketi.py`.
 - Firefox headless duman testi: `python3 -m http.server` + `firefox --headless
   --screenshot` (WebGL yazılım render ile sahne görünür).
 - arduino-cli bu makinede yok; .ino derleme doğrulaması kullanıcıda (API kullanımı
   standart Arduino-ESP32 BLE API'si; filtre matematiği simülasyonla doğrulanmıştı).
-- Köprü e2e: pty → seri_kopru.py → ws istemcisi (PYTHONPATH=/tmp/opencode/libs).
+- Köprü e2e: pty → `baslat.py kopru-seri` → ws istemcisi
+  (PYTHONPATH=/tmp/opencode/libs); sunucu açılmadığı, kopma/yeniden bağlanma
+  çalıştığı doğrulanır (`/tmp/opencode/test_seri_kopru.py`).
+- PWA çevrimdışı: `yayin/` sunulur, Firefox profiline SW kurulur, sunucu
+  kapatılıp yeniden yüklenir → uygulama kabuğu açılmalı (headless screenshot).

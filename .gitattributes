@@ -1,0 +1,5 @@
+# Satır sonu normalizasyonu: Windows toplu iş dosyaları CRLF, kabuk scriptleri LF.
+*.bat text eol=crlf
+*.sh text eol=lf
+*.command text eol=lf
+baslat.py text eol=lf

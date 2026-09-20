@@ -4,6 +4,10 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>GAZİ Kampüs Uçuş Simülatörü</title>
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="theme-color" content="#0e1116">
+<link rel="apple-touch-icon" href="ikon-192.png">
+<link rel="icon" href="ikon-192.png">
 <style>
   html, body { margin: 0; height: 100%; overflow: hidden; background: #0e1116; font-family: system-ui, sans-serif; }
   #sahne { position: fixed; inset: 0; }
@@ -56,8 +60,8 @@
 <script type="importmap">
 {
   "imports": {
-    "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
-    "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+    "three": "./vendor/three/three.module.js",
+    "three/addons/": "./vendor/three/addons/"
   }
 }
 </script>
@@ -1723,11 +1727,19 @@ async function seriBaglan() {
     kaynakAyarla(null);
   } catch (e) {
     console.warn('Seri bağlantı hatası:', e);
+    // NotFoundError: kullanıcı port seçmeden kapattı → sessiz kal
+    if (e && e.name !== 'NotFoundError') {
+      alert('Seri bağlantı kurulamadı: ' + (e.message || e) +
+        (navigator.userAgent.includes('Firefox')
+          ? '\n\nFirefox 151+ Web Serial için siteye özel "seri port" eklentisi ' +
+            'kurmanızı isteyebilir. Kurmak istemezseniz WebSocket köprüsünü deneyin.'
+          : ''));
+    }
     kaynakAyarla(null);
   }
 }
 
-// --- WebSocket (Firefox/Safari, seri_kopru.py ile) ---
+// --- WebSocket (Firefox/Safari, kopruler/seri_kopru.py ile) ---
 // sessiz=true: açılıştaki otomatik denemede hata penceresi gösterme
 function wsBaglan(sessiz = false) {
   kesSenk();
@@ -1739,13 +1751,21 @@ function wsBaglan(sessiz = false) {
       for (const satir of ol.data.split('\n')) if (satir.trim()) satirIsle(satir.trim());
     };
     ws.onerror = () => {
-      if (!sessiz) alert('WebSocket bağlantısı kurulamadı.\nTerminalde "python3 seri_kopru.py" çalıştırıyor musunuz?');
+      if (sessiz) return;
+      // Hosted HTTPS sayfada Chrome 147+ "yerel ağa erişim" izni ister:
+      const lna = location.protocol === 'https:'
+        ? '\nTarayıcı "yerel ağa erişim" izni sorduysa İzin ver;\n' +
+          'vermediysen adres çubuğundaki site izinlerinden açıp tekrar deneyin.'
+        : '';
+      alert('WebSocket bağlantısı kurulamadı.\n' +
+        'Köprü çalışıyor mu? (Linux/macOS: "./baslat.sh seri" veya "kopru-seri" — ' +
+        'Windows: "baslat.bat seri" / "kopru-seri")' + lna);
     };
     kesici = () => ws.close();
   } catch (e) { console.warn(e); }
 }
 
-// --- Bluetooth LE (Web Bluetooth; Chrome/Edge. Firefox için bt_kopru.py) ---
+// --- Bluetooth LE (Web Bluetooth; Chrome/Edge. Firefox için kopruler/bt_kopru.py) ---
 // Firmware Nordic UART Servis (NUS) yayınlar; TX karakteristiği notify eder.
 const NUS_SERVIS = '6e400001-b5a3-f393-e0a9-e50e24dcca9e';
 const NUS_TX = '6e400003-b5a3-f393-e0a9-e50e24dcca9e';
@@ -1762,7 +1782,7 @@ function btParcaIsle(parca) {
 async function btBaglan() {
   if (!navigator.bluetooth) {
     alert('Bu tarayıcı Web Bluetooth desteklemiyor. Chrome/Edge kullanın ' +
-          'veya bt_kopru.py ile WebSocket köprüsünü deneyin.');
+          'veya ./baslat.sh bt (Windows: baslat.bat bt) ile WebSocket köprüsünü deneyin.');
     return;
   }
   await kes();
@@ -2276,9 +2296,20 @@ addEventListener('resize', () => {
   renderer.setSize(innerWidth, innerHeight);
 });
 
-// Açılışta otomatik seçim: köprü çalışıyorsa WebSocket'e sessizce bağlan,
-// yoksa bağlantısız başla (Web Serial tarayıcı güvenliği gereği hep elle bağlanır).
-wsBaglan(true);
+// Açılışta otomatik WebSocket denemesi YALNIZ yerel sayfada yapılır: hosted
+// (ör. campus.gazisiber.org) sayfada Chrome 147+ yerel ağ izni penceresi
+// gösterebilir; orada bağlanma her zaman "WebSocket ile Bağlan" ile elle olur.
+const YEREL_SAYFA = ['localhost', '127.0.0.1', '::1', '[::1]']
+  .includes(location.hostname);
+if (YEREL_SAYFA) wsBaglan(true);
+
+// PWA: çevrimdışı çalışma için service worker (HTTPS/localhost; hata zararsız).
+if ('serviceWorker' in navigator && location.protocol.startsWith('http')) {
+  addEventListener('load', () => {
+    navigator.serviceWorker.register('sw.js')
+      .catch((e) => console.warn('Service worker kaydı başarısız:', e));
+  });
+}
 </script>
 </body>
 </html>

@@ -14,6 +14,10 @@ package-lock.json
 # Üretilen / önbellek verisi (yeniden üretilebilir)
 araçlar/osm_onbellek.json
 
+# Yayın paketi (araçlar/yayin_paketi.py üretir)
+yayin/
+yayin.zip
+
 # Editör / işletim sistemi
 .vscode/
 .idea/
