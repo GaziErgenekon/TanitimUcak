@@ -4,7 +4,7 @@
 
 ## Açılış (3 adım)
 
-1. **Yayınlanmış sayfa:** tarayıcıda `https://campus.gazisiber.org` aç
+1. **Yayınlanmış sayfa:** tarayıcıda `https://kampus.gazisiber.org` aç
    **veya yerel kopya:** Linux `./baslat.sh` · macOS `baslat.command` ·
    Windows `baslat.bat`
 2. Tarayıcı penceresini **tam ekran** yap (`F11`)

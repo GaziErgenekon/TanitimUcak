@@ -14,7 +14,7 @@ ve yayınlandığında **PWA** olarak kurulup çevrimdışı da açılabilir.
   uçulabilir.
 
 **İki çalıştırma yolu vardır:**
-1. **Yayınlanmış sayfa** (önerilen, Chrome/Edge): `campus.gazisiber.org`
+1. **Yayınlanmış sayfa** (önerilen, Chrome/Edge): `kampus.gazisiber.org`
    adresini aç → USB kumandayı tak → "Seri Porttan Bağlan". Python gerekmez.
 2. **Yerel kopya** (çevrimdışı/garanti): depoyu indir, `./baslat.sh`
    (Windows: `baslat.bat`, macOS: `baslat.command`) çalıştır.
@@ -33,7 +33,7 @@ ve yayınlandığında **PWA** olarak kurulup çevrimdışı da açılabilir.
 
 ### 1) Simülatörü aç
 
-**Yayınlanmış sayfa (en kolay):** tarayıcıda `https://campus.gazisiber.org`
+**Yayınlanmış sayfa (en kolay):** tarayıcıda `https://kampus.gazisiber.org`
 adresini açın. USB kumanda için Python gerekmez (Chrome/Edge).
 
 **Yerel kopya:** Linux `./baslat.sh` · macOS `baslat.command` (çift tık) ·
@@ -196,7 +196,7 @@ değerlerini `-1` yapın.
 
 ---
 
-## Yayın (campus.gazisiber.org)
+## Yayın (kampus.gazisiber.org)
 
 Simülatör **tamamen statik**tir; sunucuda Python/Node çalışmaz. Köprü, her
 ziyaretçinin kendi bilgisayarında çalışır.
@@ -212,7 +212,7 @@ dosyası, `vendor/`, `manifest.webmanifest`, `sw.js`, `ikon-*.png`.
 **Örnek Caddy yapılandırması:**
 
 ```caddy
-campus.gazisiber.org {
+kampus.gazisiber.org {
     root * /srv/campus
     file_server
     encode gzip zstd
@@ -278,7 +278,7 @@ python3 -m http.server 8000
 # Kampüs verisini üret (Overpass; ağ yoksa --onbellek):
 python3 araçlar/kampus_verisi.py --onbellek
 
-# Statik yayın paketi (campus.gazisiber.org için):
+# Statik yayın paketi (kampus.gazisiber.org için):
 python3 araçlar/yayin_paketi.py --zip
 
 # Testler:

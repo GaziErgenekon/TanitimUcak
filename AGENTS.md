@@ -51,7 +51,7 @@ Uzak repo: https://github.com/GaziErgenekon/TanitimUcak
 - `baslat.py` + `baslat.sh` / `baslat.command` / `baslat.bat` — tek tık
   başlatıcı: boş portta (8000-8010) yerel HTTP sunucusu + tarayıcı;
   `sunucu|seri|bt` modları; `kopru-seri|kopru-bt` yalnız köprü çalıştırır
-  (campus.gazisiber.org gibi hosted sayfa için; sunucu/tarayıcı açılmaz).
+  (kampus.gazisiber.org gibi hosted sayfa için; sunucu/tarayıcı açılmaz).
   Köprü modunda `.venv` kurar, olmazsa (python3-venv yoksa) `--target libs/`
   yedeğine düşer; SIGTERM'i köprüye devreder. `requirements.txt` özetini
   `.gazi-bagimlilik` damgasına yazar → sonraki açılışlar internetsiz.
@@ -143,7 +143,7 @@ python3 -m http.server 8000         # eşdeğeri (köprüsüz hızlı test)
 # Veri: python3 araçlar/kampus_verisi.py [--onbellek]
 # Chrome/Edge: "Seri Porttan Bağlan" veya "Bluetooth ile Bağlan" (Web Bluetooth)
 # Firefox: ./baslat.sh seri  (veya bt) + tarayıcıda "WebSocket ile Bağlan"
-# Hosted sayfa (campus.gazisiber.org): ./baslat.sh kopru-seri  (+ "WebSocket ile Bağlan")
+# Hosted sayfa (kampus.gazisiber.org): ./baslat.sh kopru-seri  (+ "WebSocket ile Bağlan")
 # Arduino IDE: esp32_ucak_kumandasi.ino'yu Lolin32 Lite'a yükle (115200 baud izle)
 ```
 
@@ -157,7 +157,7 @@ python3 -m http.server 8000         # eşdeğeri (köprüsüz hızlı test)
   (`vendor/three`), köprülerin ilk kurulumu internet ister.
 - Windows'ta bat dosyası CRLF (`.gitattributes`); venv yolu Scripts/, Linux bin/;
   macOS'ta `baslat.command` çift tık (LF + çalıştırma biti git'te).
-- **Hosted (campus.gazisiber.org)**: HTTPS zorunlu (Web Serial + SW). Chrome/Edge
+- **Hosted (kampus.gazisiber.org)**: HTTPS zorunlu (Web Serial + SW). Chrome/Edge
   147+ yayınlanmış sayfadan `ws://localhost:8765`'e LNA izni sorar (site başına,
   `LocalNetworkAccessAllowedForUrls` ile ön verilebilir). Bu yüzden otomatik WS
   denemesi yalnız yerel sayfada (`YEREL_SAYFA`); hosted'da düğmeyle bağlanılır.

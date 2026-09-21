@@ -13,7 +13,7 @@ Kullanım:
 Ne yapar?
 - Sunucu modlarında boş bir portta (8000'den başlayarak) yerel web sunucusu
   açar; varsayılan tarayıcıyı http://localhost:<port> ile açar. İnternet gerekmez.
-- `kopru-*` modları yalnız köprüyü çalıştırır: sayfa campus.gazisiber.org gibi
+- `kopru-*` modları yalnız köprüyü çalıştırır: sayfa kampus.gazisiber.org gibi
   bir HTTPS adresten açılırken kullanılır (sunucu/tarayıcı açılmaz).
 - Köprü modlarında .venv yoksa oluşturur ve kopruler/requirements.txt
   bağımlılıklarını kurar (yalnız ilk kurulumda internet gerekir).
@@ -178,7 +178,7 @@ def kopru_calistir(mod, ek_args, sunucu_var=True):
     print(f"\n{aciklama}")
     print(f"Köprü başlıyor: {kullanim}  (durdurmak için Ctrl+C)")
     if not sunucu_var:
-        print("Tarayıcıda campus.gazisiber.org adresini açın ve "
+        print("Tarayıcıda kampus.gazisiber.org adresini açın ve "
               "\"WebSocket ile Bağlan\" düğmesine basın.\n")
     else:
         print()
@@ -209,7 +209,7 @@ def menu():
     print("    1) Sunucu + tarayıcı        (Chrome/Edge, USB — önerilen)")
     print("    2) Sunucu + seri köprü      (Firefox/Safari, USB)")
     print("    3) Sunucu + Bluetooth köprü (Firefox/Safari, BLE)")
-    print("  Hosted sayfa (campus.gazisiber.org) için yalnız köprü:")
+    print("  Hosted sayfa (kampus.gazisiber.org) için yalnız köprü:")
     print("    4) Seri köprü               (USB)")
     print("    5) Bluetooth köprü          (BLE)")
     print("    0) Çıkış")

@@ -4,7 +4,7 @@
 #   ./baslat.sh sunucu       → yalnız sunucu + tarayıcı
 #   ./baslat.sh seri [PORT]  /  ./baslat.sh bt [AD]
 #   ./baslat.sh kopru-seri [PORT]  /  ./baslat.sh kopru-bt [AD]
-#       (hosted sayfa campus.gazisiber.org için yalnız köprü; sunucu açılmaz)
+#       (hosted sayfa kampus.gazisiber.org için yalnız köprü; sunucu açılmaz)
 set -e
 cd "$(dirname "$0")"
 

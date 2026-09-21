@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Yayın paketi üretici — campus.gazisiber.org gibi statik sunucular için.
+Yayın paketi üretici — kampus.gazisiber.org gibi statik sunucular için.
 
 Simülatörün çalışması için gereken dosyaları tek klasörde toplar:
     python3 araçlar/yayin_paketi.py            # yayin/ klasörü
